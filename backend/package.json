@@ -1,0 +1,25 @@
+{
+  "name": "cafe-pos-api",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "@hono/node-server": "^2.1.1",
+    "@hono/zod-validator": "latest",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "hono": "latest",
+    "mongodb": "latest",
+    "zod": "latest"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "latest",
+    "@types/node": "^26.5.0",
+    "typescript": "latest",
+    "wrangler": "latest"
+  }
+}

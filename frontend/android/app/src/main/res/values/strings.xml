@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Café POS</string>
+    <string name="title_activity_main">Café POS</string>
+    <string name="package_name">com.example.cafepos</string>
+    <string name="custom_url_scheme">com.example.cafepos</string>
+</resources>

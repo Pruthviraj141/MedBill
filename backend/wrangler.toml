@@ -1,0 +1,8 @@
+name = "cafe-pos-api"
+main = "src/index.ts"
+compatibility_date = "2026-09-01"
+compatibility_flags = ["nodejs_compat", "no_handle_cross_request_promise_resolution"]
+
+[vars]
+APP_ENV = "development"
+# Add secrets with: wrangler secret put MONGODB_URI

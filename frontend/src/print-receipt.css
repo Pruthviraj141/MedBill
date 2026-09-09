@@ -1,0 +1,72 @@
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .print-receipt, .print-receipt * {
+    visibility: visible;
+  }
+  .print-receipt {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 300px; /* Thermal printer typical width */
+    margin: 0;
+    padding: 10px;
+    font-family: monospace;
+    font-size: 12px;
+    color: #000;
+  }
+}
+
+.print-receipt {
+  display: none;
+}
+
+@media print {
+  .print-receipt {
+    display: block;
+  }
+}
+
+.print-receipt h1 {
+  font-size: 18px;
+  text-align: center;
+  margin-bottom: 5px;
+}
+.print-receipt p {
+  text-align: center;
+  margin: 3px 0;
+}
+.print-receipt .divider {
+  border-bottom: 1px dashed #000;
+  margin: 10px 0;
+}
+.print-receipt table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.print-receipt th, .print-receipt td {
+  text-align: left;
+  padding: 4px 0;
+  color: #000;
+  border-bottom: none;
+}
+.print-receipt th:last-child, .print-receipt td:last-child {
+  text-align: right;
+}
+.print-receipt .totals {
+  text-align: right;
+  margin-top: 10px;
+}
+.print-receipt .totals b {
+  display: inline-block;
+  width: 80px;
+}
+.print-receipt-qr {
+  text-align: center;
+  margin-top: 20px;
+}
+.print-receipt-qr img {
+  width: 120px;
+  height: 120px;
+}

@@ -1,0 +1,41 @@
+/* Vibrant Mobile POS Colors additions */
+.product-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 16px !important;
+  box-shadow: 0 6px 14px rgba(0,0,0,0.04) !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  border: 1px solid transparent !important;
+}
+
+.product-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 5px;
+  background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);
+  opacity: 0.9;
+}
+
+/* Sequential dynamic gradients */
+.product-card:nth-child(5n+1)::before { background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%); }
+.product-card:nth-child(5n+2)::before { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+.product-card:nth-child(5n+3)::before { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+.product-card:nth-child(5n+4)::before { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+.product-card:nth-child(5n+5)::before { background: linear-gradient(135deg, #b224ef 0%, #7579ff 100%); }
+
+.product-card:hover, .product-card:active {
+  transform: translateY(-3px) scale(0.98) !important;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.08) !important;
+}
+
+.category-row button {
+  transition: all 0.3s ease !important;
+}
+
+.category-row button.selected {
+  background: linear-gradient(135deg, #242320 0%, #434343 100%) !important;
+  color: white !important;
+  border: transparent !important;
+  box-shadow: 0 4px 10px rgba(36, 35, 32, 0.4) !important;
+  transform: scale(1.05);
+}
