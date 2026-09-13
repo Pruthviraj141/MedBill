@@ -6,3 +6,8 @@ compatibility_flags = ["nodejs_compat", "no_handle_cross_request_promise_resolut
 [vars]
 APP_ENV = "development"
 # Add secrets with: wrangler secret put MONGODB_URI
+
+[[d1_databases]]
+binding = "DB"
+database_name = "tbt-cafe-prod"
+database_id = "1f72193e-436e-4d33-935b-d5b1e69724bc"

@@ -1,0 +1,161 @@
+Fetching token...
+
+Testing /api/reports/week on Worker...
+Worker Response received in 10706.00ms
+Status: 200
+Data: {
+  "success": true,
+  "data": {
+    "revenue": 11127,
+    "orders": 32,
+    "averageBill": 347.72,
+    "peakHours": [
+      {
+        "hour": 2,
+        "orders": 2
+      },
+      {
+        "hour": 4,
+        "orders": 2
+      },
+      {
+        "hour": 10,
+        "orders": 3
+      },
+      {
+        "hour": 11,
+        "orders": 1
+      },
+      {
+        "hour": 12,
+        "orders": 3
+      },
+      {
+        "hour": 13,
+        "orders": 8
+      },
+      {
+        "hour": 14,
+        "orders": 2
+      },
+      {
+        "hour": 15,
+        "orders": 1
+      },
+      {
+        "hour": 19,
+        "orders": 5
+      },
+      {
+        "hour": 20,
+        "orders": 4
+      },
+      {
+        "hour": 21,
+        "orders": 1
+      }
+    ],
+    "weekdayPattern": [
+      {
+        "day": "Tue",
+        "revenue": 4782
+      },
+      {
+        "day": "Wed",
+        "revenue": 6345
+      }
+    ],
+    "topProducts": [
+      {
+        "name": "Margarita Pizza",
+        "sold": 22,
+        "revenue": 2200
+      },
+      {
+        "name": "Corn Cheese Pizza",
+        "sold": 19,
+        "revenue": 2090
+      },
+      {
+        "name": "Farmhouse Pizza",
+        "sold": 11,
+        "revenue": 1870
+      },
+      {
+        "name": "Veg Cheese Grill Sandwich",
+        "sold": 8,
+        "revenue": 800
+      },
+      {
+        "name": "Vegie Pizza",
+        "sold": 8,
+        "revenue": 1200
+      },
+      {
+        "name": "Club Sandwich",
+        "sold": 4,
+        "revenue": 280
+      },
+      {
+        "name": "Paneer Pizza",
+        "sold": 4,
+        "revenue": 600
+      },
+      {
+        "name": "Corn Cheese Sandwich",
+        "sold": 2,
+        "revenue": 240
+      },
+      {
+        "name": "Red Sauce Pasta",
+        "sold": 2,
+        "revenue": 360
+      },
+      {
+        "name": "Aloo Tikki Burger",
+        "sold": 2,
+        "revenue": 180
+      },
+      {
+        "name": "Peri Peri Burger",
+        "sold": 1,
+        "revenue": 150
+      },
+      {
+        "name": "Aloo Cheese Burger",
+        "sold": 1,
+        "revenue": 120
+      },
+      {
+        "name": "White Sauce Pasta",
+        "sold": 1,
+        "revenue": 180
+      },
+      {
+        "name": "Salted Fries",
+        "sold": 1,
+        "revenue": 70
+      },
+      {
+        "name": "Paneer Grill Sandwich",
+        "sold": 1,
+        "revenue": 120
+      },
+      {
+        "name": "Loaded Nachos",
+        "sold": 1,
+        "revenue": 140
+      }
+    ],
+    "paymentBreakdown": [
+      {
+        "method": "CASH",
+        "amount": 2470
+      },
+      {
+        "method": "UPI",
+        "amount": 8657
+      }
+    ]
+  }
+}

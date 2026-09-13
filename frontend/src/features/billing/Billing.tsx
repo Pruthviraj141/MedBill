@@ -4,7 +4,7 @@ import {
   Banknote, Clock, Minus, Plus,
   Receipt, Scan, Search, ShoppingCart, Sparkles, Trash2, X,
 } from 'lucide-react';
-import { createOrder } from '../../api/orders';
+import { checkoutService } from '../../services/checkoutService';
 import { useProducts } from '../../hooks/useProducts';
 import { useCartStore } from '../../stores/cartStore';
 import {
@@ -34,14 +34,14 @@ function pushRecentId(id: string) {
 
 export function Billing() {
   const productsQuery = useProducts();
-  const items     = useCartStore((s) => s.items);
-  const add       = useCartStore((s) => s.add);
+  const items = useCartStore((s) => s.items);
+  const add = useCartStore((s) => s.add);
   const updateQty = useCartStore((s) => s.updateQuantity);
-  const clear     = useCartStore((s) => s.clear);
+  const clear = useCartStore((s) => s.clear);
 
   const [searchRaw, setSearchRaw] = useState('');
-  const search   = useDeferredValue(searchRaw);
-  const [cat, setCat]       = useState('All');
+  const search = useDeferredValue(searchRaw);
+  const [cat, setCat] = useState('All');
   const [cartOpen, setCartOpen] = useState(false);
   const [lastOrder, setLastOrder] = useState<Order | null>(null);
 
@@ -57,34 +57,54 @@ export function Billing() {
     return products.filter((p) => {
       const pCat = p.category || p.categoryId || 'General';
       const matchCat =
-        cat === 'All'    ? true :
-        cat === 'Recent' ? getRecentIds().includes(p.id) :
-        pCat === cat;
+        cat === 'All' ? true :
+          cat === 'Recent' ? getRecentIds().includes(p.id) :
+            pCat === cat;
       return matchCat && (!q || p.name.toLowerCase().includes(q));
     });
   }, [cat, products, search]);
 
-  const quantities  = useMemo(() => new Map(items.map((i) => [i.id, i.quantity])), [items]);
+  const quantities = useMemo(() => new Map(items.map((i) => [i.id, i.quantity])), [items]);
   const productById = useMemo(() => new Map(products.map((p) => [p.id, p])), [products]);
 
-  const subtotal  = items.reduce((s, i) => s + i.price * i.quantity, 0);
-  const total     = subtotal;
+  const subtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
+  const total = subtotal;
   const itemCount = items.reduce((s, i) => s + i.quantity, 0);
 
   const checkout = useMutation({
-    mutationFn: (pm: PaymentMethod) => createOrder({
-      deviceId: 'pos-android',
-      paymentMethod: pm,
-      items: items.map((i) => ({ productId: i.id, quantity: i.quantity })),
-    }),
-    onSuccess: (order) => { setLastOrder(order); clear(); setCartOpen(false); },
+    mutationFn: async (pm: PaymentMethod) => {
+      const dbOrder = await checkoutService.createOrder(
+        items.map((i) => ({ productId: i.id, quantity: i.quantity })),
+        pm
+      );
+      const uiOrder: Order = {
+        id: dbOrder.id,
+        _id: dbOrder.id,
+        invoiceNumber: dbOrder.invoice_number,
+        cafeId: "",
+        status: dbOrder.status as any,
+        subtotal: dbOrder.subtotal,
+        grandTotal: dbOrder.total,
+        paymentMethod: dbOrder.payment_method as any,
+        createdAt: dbOrder.created_at,
+        items: items.map(i => ({
+          productId: i.id,
+          name: i.name,
+          quantity: i.quantity,
+          unitPrice: i.price,
+          total: i.price * i.quantity
+        }))
+      };
+      return uiOrder;
+    },
+    onSuccess: (uiOrder) => { setLastOrder(uiOrder); clear(); setCartOpen(false); },
   });
 
-  const handleAdd  = useCallback((id: string) => {
+  const handleAdd = useCallback((id: string) => {
     const p = productById.get(id);
     if (p) { add(p); pushRecentId(id); }
   }, [add, productById]);
-  
+
   const handleStep = useCallback((id: string, d: number) => updateQty(id, d), [updateQty]);
   const clearSearch = useCallback(() => setSearchRaw(''), []);
 
@@ -92,29 +112,29 @@ export function Billing() {
 
   return (
     <div className="flex flex-col w-full h-full pb-20">
-      
+
       {/* Search Bar */}
       <div className="relative flex items-center w-full mb-4 px-1">
         <div className="absolute left-4 text-muted-foreground"><Search size={18} /></div>
-        <input 
+        <input
           type="text"
           placeholder="Search for coffee, snacks, pizza..."
           className="w-full h-12 pl-11 pr-11 rounded-3xl border border-transparent bg-white dark:bg-[#1C1C1E] text-foreground text-[14px] focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all shadow-sm dark:shadow-none dark:border-white/5"
           value={searchRaw}
           onChange={e => setSearchRaw(e.target.value)}
         />
-        <button 
-          className="absolute right-3 p-1.5 text-muted-foreground rounded-full hover:bg-muted/50 active:bg-muted transition-colors opacity-80" 
+        <button
+          className="absolute right-3 p-1.5 text-muted-foreground rounded-full hover:bg-muted/50 active:bg-muted transition-colors opacity-80"
           onClick={() => searchRaw ? clearSearch() : null}
         >
-          {searchRaw ? <X size={18}/> : <Scan size={18}/>}
+          {searchRaw ? <X size={18} /> : <Scan size={18} />}
         </button>
       </div>
 
       {/* Category Chips ScrollArea */}
       <div className="flex gap-2.5 overflow-x-auto pb-4 mb-2 no-scrollbar px-1 snap-x">
         {categories.map(c => (
-          <button 
+          <button
             key={c}
             className={`snap-start flex-none flex items-center justify-center h-[38px] px-4 rounded-full text-[13px] font-medium transition-all active:scale-95 ${cat === c ? 'bg-[#513217] text-white dark:bg-[#EAD6C0] dark:text-[#1A1917] shadow-md border-transparent' : 'bg-white dark:bg-transparent text-foreground border border-border/80 dark:border-white/10 hover:border-border'}`}
             onClick={() => setCat(c)}
@@ -181,8 +201,8 @@ export function Billing() {
 
       {/* Sticky Cart Bar */}
       {items.length > 0 && (
-        <div 
-          className="fixed bottom-[84px] left-4 right-4 z-20 flex items-center justify-between h-[64px] px-2 pl-5 bg-white dark:bg-[#1A1A1C] border border-border/50 dark:border-white/10 rounded-full shadow-[0_8px_30px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.4)] cursor-pointer active:scale-[0.98] transition-all animate-in slide-in-from-bottom-5" 
+        <div
+          className="fixed bottom-[84px] left-4 right-4 z-20 flex items-center justify-between h-[64px] px-2 pl-5 bg-white dark:bg-[#1A1A1C] border border-border/50 dark:border-white/10 rounded-full shadow-[0_8px_30px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.4)] cursor-pointer active:scale-[0.98] transition-all animate-in slide-in-from-bottom-5"
           onClick={() => setCartOpen(true)}
         >
           <div className="flex items-center gap-3">
@@ -207,7 +227,7 @@ export function Billing() {
       <Sheet open={cartOpen} onOpenChange={setCartOpen}>
         <SheetContent side="bottom" showCloseButton={false} className="p-0 border-t-0 rounded-t-3xl max-h-[85vh] flex flex-col bg-card dark:bg-[#1C1A19]">
           <div className="w-12 h-1.5 mx-auto mt-3 rounded-full bg-border" />
-          
+
           <SheetHeader className="px-5 py-4 pb-2 flex flex-row items-center justify-between shadow-sm z-10 border-b border-border/40">
             <SheetTitle className="text-xl font-black text-foreground m-0">Current Bill</SheetTitle>
             <button className="w-8 h-8 flex items-center justify-center rounded-full bg-muted/60 text-muted-foreground active:scale-95 transition-transform" onClick={() => setCartOpen(false)}>
@@ -259,7 +279,7 @@ export function Billing() {
                   <div className="grid grid-cols-2 gap-3">
                     {([
                       { method: 'CASH' as PaymentMethod, label: 'CASH', Icon: Banknote, bg: 'bg-[#B47C44]', fg: 'text-white' },
-                      { method: 'UPI'  as PaymentMethod, label: 'UPI',  Icon: Sparkles, bg: 'bg-[#7656B8]', fg: 'text-white' },
+                      { method: 'UPI' as PaymentMethod, label: 'UPI', Icon: Sparkles, bg: 'bg-[#7656B8]', fg: 'text-white' },
                     ]).map(({ method, label, Icon, bg, fg }) => (
                       <button
                         key={method}
@@ -269,7 +289,7 @@ export function Billing() {
                       >
                         <div className="flex flex-col items-start gap-1 z-10 w-full">
                           <div className="flex items-center gap-1.5">
-                            <Icon size={16} strokeWidth={2.5}/>
+                            <Icon size={16} strokeWidth={2.5} />
                             <span className="text-[13px] font-black tracking-widest">{label}</span>
                           </div>
                           <span className="text-[15px] font-bold opacity-90 leading-none">{formatMoney(total)}</span>
@@ -283,7 +303,7 @@ export function Billing() {
                 {checkout.isError && <p className="text-center text-sm font-bold text-destructive mt-4">Payment failed. Please try again.</p>}
 
                 <button className="w-full flex items-center justify-center gap-2 mt-6 h-12 text-[14px] font-bold text-destructive active:bg-destructive/10 rounded-xl transition-colors" onClick={clear} disabled={checkout.isPending}>
-                  <Trash2 size={16} strokeWidth={2.5}/> Clear All Items
+                  <Trash2 size={16} strokeWidth={2.5} /> Clear All Items
                 </button>
               </>
             )}
@@ -348,11 +368,11 @@ const ProductCard = memo(function ProductCard({
           onPointerUp={() => setTimeout(() => { blockRef.current = false; }, 60)}
         >
           <button className="w-[22px] h-[22px] rounded-full bg-transparent flex items-center justify-center hover:opacity-80 active:scale-90 transition-transform" onClick={() => onStep(product.id, -1)} aria-label="Remove one">
-            <Minus size={14} strokeWidth={3}/>
+            <Minus size={14} strokeWidth={3} />
           </button>
           <b className="min-w-[14px] text-center text-[12px] font-bold tabular-nums leading-none">{quantity}</b>
           <button className="w-[22px] h-[22px] rounded-full bg-transparent flex items-center justify-center hover:opacity-80 active:scale-90 transition-transform" onClick={() => onStep(product.id, 1)} aria-label="Add one">
-            <Plus size={14} strokeWidth={3}/>
+            <Plus size={14} strokeWidth={3} />
           </button>
         </div>
       )}

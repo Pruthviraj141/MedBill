@@ -1,10 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
-import { getDailyReport } from '../api/reports';
+import { dashboardRepository } from '../db/repositories/dashboardRepository';
 
 export function useDashboard(period = 'today') {
   return useQuery({
     queryKey: ['dashboard', period],
-    queryFn: () => getDailyReport(period),
+    queryFn: async () => {
+      const data = await dashboardRepository.getDailyMetrics(period);
+      return data;
+    },
     staleTime: 60 * 1000,
   });
 }

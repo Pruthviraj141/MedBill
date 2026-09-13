@@ -1,29 +1,22 @@
 import { Hono } from 'hono';
-import { connectDB } from '../db';
-import { sign } from 'hono/jwt';
+import { Env } from '../types/env';
 
-export const authRouter = new Hono<{ Bindings: { AUTH_SECRET: string, MONGODB_URI: string, MONGODB_DB_NAME: string } }>();
+export const authRouter = new Hono<{ Bindings: Env }>();
 
 authRouter.post('/login', async (c) => {
   try {
-    const { username, password } = await c.req.json();
-    const db = await connectDB(c.env);
+    const { pin } = await c.req.json();
     
-    const user = await db.collection('users').findOne({ username });
-    if (!user || user.passwordHash !== password) {
-      return c.json({ ok: false, error: 'Invalid credentials' }, 401);
+    // Validate PIN from settings table, fallback to '1234'
+    const setting = await c.env.DB.prepare('SELECT value FROM settings WHERE key = ?').bind('pin').first<{value: string}>();
+    const validPin = setting?.value || '1234';
+    
+    if (pin === validPin) {
+      return c.json({ success: true, token: 'simple-local-token' });
     }
-
-    const token = await sign({
-      id: user._id.toString(),
-      cafeId: user.cafeId,
-      role: user.role,
-      exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7,
-    }, c.env.AUTH_SECRET, 'HS256');
-
-    return c.json({ ok: true, token, user: { username: user.username, role: user.role, cafeId: user.cafeId } });
-  } catch (err: any) {
-    console.error("Login Error:", err);
-    return c.json({ ok: false, error: err.message || 'Internal Server Error' }, 500);
+    
+    return c.json({ success: false, message: 'Invalid PIN' }, 401);
+  } catch (error) {
+    return c.json({ success: false, message: 'Invalid payload' }, 400);
   }
 });

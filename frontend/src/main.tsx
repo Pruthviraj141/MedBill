@@ -9,6 +9,9 @@ import './mobile-colors.css';
 import './print-receipt.css';
 import './upi-animation.css';
 
+// SQLite Diagnostic Toolkit (run via console: window.runDiagnosticTests())
+import './db/diagnostics';
+
 createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>

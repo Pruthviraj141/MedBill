@@ -1,8 +1,9 @@
 import React, { lazy, Suspense, useState, useEffect } from 'react';
-import { Home, Receipt, ShoppingBag, Settings, LogIn } from 'lucide-react';
-import { apiClient } from '../api/client';
+import { Home, Receipt, ShoppingBag, Settings, LogIn, Database } from 'lucide-react';
 import logoSrc from '../assets/logo.png';
 import '../stores/themeStore'; // initialize theme on load
+import { initDB } from '../db/database';
+import { syncService } from '../services/syncService';
 
 const Dashboard = lazy(() => import('../features/dashboard/Dashboard').then((module) => ({ default: module.Dashboard })));
 const Billing = lazy(() => import('../features/billing/Billing').then((module) => ({ default: module.Billing })));
@@ -29,9 +30,34 @@ export function App() {
   const [isOffline, setIsOffline] = useState(false);
   const [token, setToken] = useState(localStorage.getItem('auth_token'));
   const [loginError, setLoginError] = useState('');
+  
+  const [dbReady, setDbReady] = useState(false);
+  const [dbError, setDbError] = useState('');
 
   useEffect(() => {
-    const on = () => setIsOffline(false);
+    // 1. Initialize DB safely
+    initDB()
+      .then(() => {
+        setDbReady(true);
+        // Start background synchronization daemon after DB is ready
+        syncService.startBackgroundSync(15000);
+      })
+      .catch((e) => {
+        if (e.message === 'WEB_MODE') {
+          setDbReady(true);
+        } else {
+          console.error('App DB Init failed:', e);
+          setDbError('Native SQLite unavailable. Please run on Android/Capacitor device.');
+        }
+      });
+
+    const on = () => {
+      setIsOffline(false);
+      // Pre-emptively push any pending items when network returns
+      if (dbReady) {
+        syncService.pushPending().catch(console.error);
+      }
+    };
     const off = () => setIsOffline(true);
     window.addEventListener('online', on);
     window.addEventListener('offline', off);
@@ -42,22 +68,23 @@ export function App() {
       window.removeEventListener('online', on);
       window.removeEventListener('offline', off);
       window.removeEventListener('auth-expired', onAuthExpired);
+      syncService.stopBackgroundSync();
     };
-  }, []);
+  }, [dbReady]);
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoginError('');
     const form = new FormData(e.currentTarget);
-    try {
-      const res = await apiClient.post<any>('/api/auth/login', {
-        username: form.get('username'),
-        password: form.get('password')
-      });
-      localStorage.setItem('auth_token', res.token);
-      setToken(res.token);
-    } catch(err: any) {
-      setLoginError(err.message);
+    const u = form.get('username');
+    const p = form.get('password');
+    if (u === 'admin' && p === 'admin') {
+      // Provide a mock token for local fallback
+      const token = 'offline-admin-token';
+      localStorage.setItem('auth_token', token);
+      setToken(token);
+    } else {
+      setLoginError('Invalid credentials. Use admin / admin');
     }
   };
 
@@ -77,6 +104,26 @@ export function App() {
             <LogIn size={18}/> Log In
           </button>
         </form>
+      </div>
+    );
+  }
+
+  if (dbError) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[100dvh] bg-background text-foreground p-8 text-center gap-4">
+        <Database size={48} className="text-destructive opacity-80" />
+        <h2 className="text-xl font-bold text-destructive">Database Error</h2>
+        <p className="text-sm font-medium text-muted-foreground">{dbError}</p>
+        <p className="text-[12px] opacity-70 mt-4">TBT Cafe offline engine strictly requires Capacitor Native Environment.</p>
+      </div>
+    );
+  }
+
+  if (!dbReady) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[100dvh] bg-background text-foreground gap-4">
+        <div className="w-12 h-12 rounded-full border-4 border-primary/30 border-t-primary animate-spin" />
+        <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground">Initializing Database</p>
       </div>
     );
   }

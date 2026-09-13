@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
 import { Plus } from 'lucide-react';
-import { addProduct } from '../../api/products';
+import { productsRepository } from '../../db/repositories/productsRepository';
 import { useProducts } from '../../hooks/useProducts';
 import { StateView } from '../../components/ui/StateView';
 import { formatMoney } from '../../utils/format';
@@ -17,7 +17,7 @@ export function Products() {
   const [isAdding, setIsAdding] = useState(false);
   const form = useForm<ProductForm>({ defaultValues: { name: '', categoryId: '', price: '' } });
   const createProduct = useMutation({
-    mutationFn: (values: ProductForm) => addProduct({ name: values.name.trim(), categoryId: values.categoryId.trim(), price: Number(values.price), active: true }),
+    mutationFn: (values: ProductForm) => productsRepository.addProduct({ name: values.name.trim(), categoryId: values.categoryId.trim(), price: Number(values.price), active: true }),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['products'] }); form.reset(); setIsAdding(false); },
   });
 

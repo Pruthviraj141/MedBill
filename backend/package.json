@@ -5,15 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "wrangler dev",
-    "deploy": "wrangler deploy"
+    "deploy": "wrangler deploy",
+    "seed:products": "node scripts/migrateProducts.js"
   },
   "dependencies": {
-    "@hono/node-server": "^2.1.1",
     "@hono/zod-validator": "latest",
     "cors": "^2.8.6",
-    "dotenv": "^17.4.2",
     "hono": "latest",
-    "mongodb": "latest",
     "zod": "latest"
   },
   "devDependencies": {

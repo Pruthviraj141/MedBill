@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 
 // Usage: npx tsx testing/perf-diagnose.ts
-const API_URL = process.env.API_URL || 'http://127.0.0.1:8787';
+const API_URL = process.env.API_URL || 'https://cafe-pos-api.pruthvigavhane.workers.dev';
 const USERNAME = process.env.USERNAME || 'admin';
 const PASSWORD = process.env.PASSWORD || 'admin';
 

@@ -1,114 +1,91 @@
 import { Hono } from 'hono';
-import { connectDB } from '../db';
-import { authMiddleware, requireRole } from '../middleware/auth';
+import { Env } from '../types/env';
 
-export const reportsRouter = new Hono();
-reportsRouter.use('*', authMiddleware(), requireRole(['OWNER', 'MANAGER']));
+export const reportsRouter = new Hono<{ Bindings: Env }>();
 
-reportsRouter.get('/:timeframe', async (c) => {
+const getReportForTimeframe = async (c: any, timeModifier: string) => {
   try {
-    const payload = c.get('jwtPayload') as any;
-    const timeframe = c.req.param('timeframe');
+    // Determine the base timestamp to filter from (e.g. 'now', '-1 day', '-7 days', '-1 month')
+    // and filter for COMPLETED only.
+    
+    // 1. Basic Stats
+    const statsQuery = await c.env.DB.prepare(`
+      SELECT 
+        COUNT(id) as totalOrders,
+        COALESCE(SUM(total), 0) as totalRevenue,
+        COALESCE(AVG(total), 0) as averageBill
+      FROM orders 
+      WHERE status = 'COMPLETED' 
+      AND created_at >= datetime('now', ?)
+    `).bind(timeModifier).first();
 
-    // Strict constraint: NO cache staleness. Real-time dashboards.
+    // 2. Payment Breakdown
+    const { results: payments } = await c.env.DB.prepare(`
+      SELECT payment_method as method, COALESCE(SUM(total), 0) as amount
+      FROM orders
+      WHERE status = 'COMPLETED' AND created_at >= datetime('now', ?)
+      GROUP BY payment_method
+    `).bind(timeModifier).all();
 
-    const db = await connectDB(c.env as any);
+    // 3. Top Products
+    const { results: topProducts } = await c.env.DB.prepare(`
+      SELECT oi.name_snapshot as name, COALESCE(SUM(oi.quantity), 0) as sold
+      FROM order_items oi
+      JOIN orders o ON o.id = oi.order_id
+      WHERE o.status = 'COMPLETED' AND o.created_at >= datetime('now', ?)
+      GROUP BY oi.product_id, oi.name_snapshot
+      ORDER BY sold DESC
+      LIMIT 5
+    `).bind(timeModifier).all();
 
-    const timeMatch: any = { cafeId: payload.cafeId, status: 'COMPLETED' };
-    const now = new Date();
-    if (timeframe === 'today') {
-      timeMatch.createdAt = { $gte: new Date(new Date(now).setHours(0, 0, 0, 0)).toISOString() };
-    } else if (timeframe === 'week') {
-      const d = new Date(now); d.setDate(d.getDate() - 7);
-      timeMatch.createdAt = { $gte: d.toISOString() };
-    } else if (timeframe === 'month') {
-      const d = new Date(now); d.setMonth(d.getMonth() - 1);
-      timeMatch.createdAt = { $gte: d.toISOString() };
-    } else if (timeframe === 'all') {
-      // Unbounded full history match, retain base cafeId match only
-    } else {
-      return c.json({ success: false, error: { code: 'INVALID_TIMEFRAME', message: 'Unknown frame' } }, 400);
-    }
+    // 4. Peak Hours (UTC for now, as tz isn't dynamically passed)
+    const { results: peakHours } = await c.env.DB.prepare(`
+      SELECT 
+        CAST(strftime('%H', created_at) AS INTEGER) as hour,
+        COUNT(id) as orders,
+        COALESCE(SUM(total), 0) as revenue
+      FROM orders
+      WHERE status = 'COMPLETED' AND created_at >= datetime('now', ?)
+      GROUP BY hour
+      ORDER BY orders DESC
+    `).bind(timeModifier).all();
 
-    // Single $facet aggregate — one Atlas round trip
-    const pipeline = [
-      { $match: timeMatch },
-      { 
-        $addFields: { 
-          parsedDate: { 
-            $convert: { 
-              input: "$createdAt", 
-              to: "date",
-              onError: new Date("2024-01-01T00:00:00Z"),
-              onNull: new Date("2024-01-01T00:00:00Z")
-            } 
-          } 
-        } 
-      },
-      {
-        $facet: {
-          metrics: [
-            { $group: { _id: null, revenue: { $sum: '$grandTotal' }, orders: { $sum: 1 } } }
-          ],
-          payments: [
-            { $group: { _id: '$paymentMethod', total: { $sum: '$grandTotal' } } }
-          ],
-          products: [
-            { $unwind: '$items' },
-            { $group: { _id: '$items.name', sold: { $sum: '$items.quantity' }, total: { $sum: '$items.total' } } },
-            { $sort: { sold: -1 } },
-            { $limit: 200 }
-          ],
-          peakHours: [
-            { $group: { _id: { $hour: "$parsedDate" }, orders: { $sum: 1 } } },
-            { $sort: { _id: 1 } }
-          ],
-          weekdays: [
-            { $group: { _id: { $dayOfWeek: "$parsedDate" }, revenue: { $sum: "$grandTotal" } } },
-            { $sort: { _id: 1 } }
-          ]
-        }
-      }
-    ];
+    // 5. Weekday Pattern
+    const { results: weekdayPattern } = await c.env.DB.prepare(`
+      SELECT 
+        CAST(strftime('%w', created_at) AS INTEGER) as dayNum,
+        COUNT(id) as orders,
+        COALESCE(SUM(total), 0) as revenue
+      FROM orders
+      WHERE status = 'COMPLETED' AND created_at >= datetime('now', ?)
+      GROUP BY dayNum
+      ORDER BY dayNum ASC
+    `).bind(timeModifier).all();
+    
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const mappedWeekdays = weekdayPattern.map((r: any) => ({
+      day: dayNames[r.dayNum] || 'Unknown',
+      orders: r.orders,
+      revenue: r.revenue
+    }));
 
-    const results = await db.collection('orders').aggregate(pipeline).toArray();
-    const facet = results[0] || {};
-    const summary = facet.metrics?.[0] || { revenue: 0, orders: 0 };
-    const payments: any[] = facet.payments || [];
-    const products: any[] = facet.products || [];
-    const rawPeakHours: any[] = facet.peakHours || [];
-    const rawWeekdays: any[] = facet.weekdays || [];
+    const peakHour = peakHours.length > 0 ? `${String(peakHours[0].hour).padStart(2, '0')}:00` : null;
 
-    const dayNames = ["", "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
-    const body = JSON.stringify({
-      success: true,
-      data: {
-        revenue: summary.revenue || 0,
-        orders: summary.orders || 0,
-        averageBill: summary.orders ? Math.round((summary.revenue / summary.orders) * 100) / 100 : 0,
-        peakHours: rawPeakHours.map(p => ({ hour: p._id, orders: p.orders })),
-        weekdayPattern: rawWeekdays.map(d => ({ day: dayNames[d._id] || "Unk", revenue: d.revenue })),
-        topProducts: products.map(p => ({ name: p._id, sold: p.sold, revenue: p.total || 0 })),
-        paymentBreakdown: payments.map(p => ({ method: p._id, amount: p.total }))
-      }
-    });
-
-    const response = new Response(body, {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      }
-    });
-
-    return response;
-
-  } catch (err: any) {
-    console.error('Reports Route Crash:', err.message, err.stack);
     return c.json({
-      success: false,
-      error: { code: 'DATABASE_ERROR', message: err.message || 'Report generated offline' }
-    }, 500, { 'Access-Control-Allow-Origin': '*' });
+      revenue: Number(statsQuery.totalRevenue),
+      orders: Number(statsQuery.totalOrders),
+      averageBill: Number(statsQuery.averageBill),
+      peakHour,
+      topProducts,
+      paymentBreakdown: payments,
+      peakHours,
+      weekdayPattern: mappedWeekdays
+    });
+  } catch (err: any) {
+    return c.json({ error: err.message }, 500);
   }
-});
+};
+
+reportsRouter.get('/today', (c) => getReportForTimeframe(c, '-1 day'));
+reportsRouter.get('/week', (c) => getReportForTimeframe(c, '-7 days'));
+reportsRouter.get('/month', (c) => getReportForTimeframe(c, '-1 month'));
