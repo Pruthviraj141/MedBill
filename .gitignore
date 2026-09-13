@@ -1,5 +1,49 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+wrangler.log
+build.log
+build2.log
+build_final.log
+
+# Node.js
 node_modules
 dist
-.wrangler
+dist-ssr
+*.local
+
+# Environment variables
 .env
+.env.*
+!.env.example
+.dev.vars
+
+# Cloudflare Wrangler
+.wrangler
+
+# Mac / System
 .DS_Store
+*.pem
+
+# Editor directories and files
+.idea
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# TSC
+tsconfig.tsbuildinfo
+
+# Capacitor / Mobile
+android/app/build/
+ios/App/App/build/
+android/app/build.gradle.local
+android/.gradle
