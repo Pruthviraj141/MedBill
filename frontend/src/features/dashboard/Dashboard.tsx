@@ -89,7 +89,7 @@ export function Dashboard({ onGo }: { onGo: (view: string) => void }) {
           ))}
         </div>
         <button 
-          className="ml-3 p-[9px] bg-[#171615] dark:bg-[#131313] text-foreground/80 dark:text-[#EAD6C0] rounded-full border border-[#2B2B2B] active:scale-95 transition-all shadow-sm flex-none" 
+          className="ml-3 p-[9px] bg-[#171615] dark:bg-[#131313] text-white/90 dark:text-[#EAD6C0] rounded-full border border-[#2B2B2B] active:scale-95 transition-all shadow-sm flex-none" 
           onClick={async (e) => {
              e.stopPropagation();
              setIsRefreshing(true);

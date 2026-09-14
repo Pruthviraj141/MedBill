@@ -1,12 +1,16 @@
 import { syncQueueRepository } from '../db/repositories/syncQueueRepository';
 import { productsRepository } from '../db/repositories/productsRepository';
 import { settingsRepository } from '../db/repositories/settingsRepository';
+import { ordersRepository } from '../db/repositories/ordersRepository';
 import { SyncQueue, Product, Setting } from '../db/types';
 
 import { queryClient } from '../lib/queryClient';
 import { defaultCatalog } from '../db/defaultCatalog';
 
-const API_URL = import.meta.env?.VITE_API_BASE_URL || 'http://127.0.0.1:8787/api';
+const API_URL = import.meta.env?.VITE_API_BASE_URL;
+if (!API_URL) {
+  throw new Error("VITE_API_BASE_URL is missing. Please set it explicitly in your .env configuration.");
+}
 
 let isSyncing = false;
 let interval: any = null;
@@ -16,6 +20,7 @@ export const syncService = {
     if (interval) clearInterval(interval);
     interval = setInterval(() => {
       syncService.pushPending().catch(console.error);
+      syncService.pullSystem().catch(console.error);
     }, ms);
   },
   
@@ -51,7 +56,7 @@ export const syncService = {
     }
   },
 
-  pullCatalog: async () => {
+  pullSystem: async () => {
     try {
       const prodRes = await fetch(`${API_URL}/sync/products`);
       if (prodRes.ok) {
@@ -69,6 +74,27 @@ export const syncService = {
         const settings: Setting[] = data.settings || [];
         for (const s of settings) {
           await settingsRepository.setSetting(s.key, s.value);
+        }
+      }
+
+      // 3. Orders (incremental bidirectional sync)
+      let lastOrderSync = await settingsRepository.getSetting('last_order_sync') || '1970-01-01T00:00:00.000Z';
+      const orderRes = await fetch(`${API_URL}/sync/orders?last_sync=${encodeURIComponent(lastOrderSync)}`);
+      if (orderRes.ok) {
+        const data = await orderRes.json();
+        const orders = data.orders || [];
+        
+        let maxTimestamp = lastOrderSync;
+        for (const o of orders) {
+           await ordersRepository.insertCloudOrderBase(o.order, o.items || []);
+           const t = o.order.voided_at || o.order.created_at;
+           if (t > maxTimestamp) maxTimestamp = t;
+        }
+
+        if (maxTimestamp > lastOrderSync) {
+           await settingsRepository.setSetting('last_order_sync', maxTimestamp);
+           queryClient.invalidateQueries({ queryKey: ['orders'] });
+           queryClient.invalidateQueries({ queryKey: ['dashboard'] });
         }
       }
     } catch (e) {

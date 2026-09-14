@@ -19,7 +19,9 @@ export const checkoutService = {
     }
 
     const orderId = generateId();
-    const invoiceNumber = `INV-${new Date().toISOString().replace(/\\D/g, '').slice(0, 8)}-${Math.floor(1000 + Math.random() * 9000)}`;
+    // Genuinely collision-safe offline invoice: INV-YYYYMMDD-[FULL UUID]
+    const dateStr = new Date().toISOString().replace(/\D/g, '').slice(0, 8);
+    const invoiceNumber = `INV-${dateStr}-${orderId}`;
     
     let subtotal = 0;
     const items: OrderItem[] = [];
@@ -50,7 +52,7 @@ export const checkoutService = {
       invoice_number: invoiceNumber,
       status: 'COMPLETED',
       subtotal,
-      total: subtotal, // exact mappings rule
+      total: subtotal,
       payment_method: paymentMethod,
       created_at: new Date().toISOString(),
       voided_at: null,

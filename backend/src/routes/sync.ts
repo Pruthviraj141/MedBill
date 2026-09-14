@@ -78,6 +78,30 @@ syncRouter.post('/voids', async (c) => {
   return c.json({ success: true, processed: processedIds });
 });
 
+syncRouter.get('/orders', async (c) => {
+  const lastSync = c.req.query('last_sync') || '1970-01-01T00:00:00.000Z';
+  
+  const { results: orders } = await c.env.DB.prepare(
+    `SELECT * FROM orders WHERE created_at > ? OR voided_at > ? ORDER BY created_at ASC LIMIT 200`
+  ).bind(lastSync, lastSync).all();
+
+  if (!orders || orders.length === 0) return c.json({ orders: [] });
+
+  const orderIds = orders.map(o => `'${o.id}'`).join(',');
+  const { results: items } = await c.env.DB.prepare(
+    `SELECT * FROM order_items WHERE order_id IN (${orderIds})`
+  ).all();
+
+  const formattedOrders = orders.map(o => {
+    return {
+      order: o,
+      items: items.filter(i => i.order_id === o.id)
+    };
+  });
+
+  return c.json({ orders: formattedOrders });
+});
+
 syncRouter.get('/products', async (c) => {
   const { results } = await c.env.DB.prepare('SELECT * FROM products').all();
   return c.json({ products: results || [] });

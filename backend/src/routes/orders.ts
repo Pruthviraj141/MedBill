@@ -49,7 +49,10 @@ ordersRouter.post('/', async (c) => {
     const body = await c.req.json();
     // Support either direct order creation or sync payloads (which provide full id / date etc)
     const id = body.id || body._id || crypto.randomUUID();
-    const invoiceNumber = body.invoiceNumber || body.invoice_number || `INV-${Date.now()}`;
+    
+    const dateStr = new Date().toISOString().replace(/\D/g, '').slice(0, 8);
+    const invoiceNumber = body.invoiceNumber || body.invoice_number || `INV-${dateStr}-${id}`;
+    
     const paymentMethod = body.paymentMethod || body.payment_method;
     const createdAt = body.createdAt || body.created_at || new Date().toISOString();
     

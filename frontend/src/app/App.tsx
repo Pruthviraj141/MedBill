@@ -51,7 +51,7 @@ export function App() {
 
         setDbReady(true);
         // Initial cloud bootstrap sync
-        syncService.pullCatalog().catch(console.error);
+        syncService.pullSystem().catch(console.error);
         // Start background synchronization daemon after DB is ready
         syncService.startBackgroundSync(15000);
       })

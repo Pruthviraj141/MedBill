@@ -65,7 +65,18 @@ const nativeImpl = {
   getOrders: async (limit: number = 100): Promise<Order[]> => {
     const db = await getDB();
     const res = await db.query(`SELECT * FROM orders ORDER BY created_at DESC LIMIT ?`, [limit]);
-    return res.values as Order[] || [];
+    const orders = res.values as Order[] || [];
+    if (orders.length === 0) return [];
+    
+    // Explicitly hydrate items for local UI
+    const orderIds = orders.map(o => `'${o.id}'`).join(',');
+    const itemsRes = await db.query(`SELECT * FROM order_items WHERE order_id IN (${orderIds})`);
+    const items = itemsRes.values as OrderItem[] || [];
+    
+    return orders.map(o => ({
+      ...o,
+      items: items.filter(i => i.order_id === o.id)
+    }));
   },
 
   getOrderById: async (id: string): Promise<{ order: Order, items: OrderItem[] } | null> => {
@@ -78,6 +89,32 @@ const nativeImpl = {
     const items = itemsRes.values as OrderItem[] || [];
 
     return { order, items };
+  },
+
+  insertCloudOrderBase: async (order: Order, items: OrderItem[]) => {
+    const db = await getDB();
+    
+    const orderStmt = {
+      statement: `
+        INSERT OR REPLACE INTO orders (id, invoice_number, status, subtotal, total, payment_method, created_at, voided_at, void_reason)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `,
+      values: [order.id, order.invoice_number, order.status, order.subtotal, order.total, order.payment_method, order.created_at, order.voided_at || null, order.void_reason || null]
+    };
+
+    const itemStmts = items.map(item => ({
+      statement: `
+        INSERT OR REPLACE INTO order_items (id, order_id, product_id, name_snapshot, unit_price, quantity, line_total)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `,
+      values: [item.id, item.order_id, item.product_id, item.name_snapshot, item.unit_price, item.quantity, item.line_total]
+    }));
+
+    const set = [orderStmt, ...itemStmts];
+    const res = await db.executeSet(set);
+    if (res.changes && res.changes.changes && res.changes.changes < 0) {
+      throw new Error('SQLite Sync Pull Transaction failed.');
+    }
   }
 };
 
@@ -144,6 +181,11 @@ const webImpl = {
     }));
 
     return { order, items };
+  },
+
+  insertCloudOrderBase: async (order: Order, items: OrderItem[]) => {
+    // Web interacts strictly online. Incremental local storing is native only.
+    return;
   }
 };
 

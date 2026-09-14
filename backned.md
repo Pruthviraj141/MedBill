@@ -1,295 +1,258 @@
-CRITICAL ANDROID PRODUCT BOOTSTRAP FAILURE + REMOVE ADMIN LOGIN
+CRITICAL PRODUCTION SYNC VERIFICATION — V2 IS INSTALLED BUT WEB → ANDROID STILL DOES NOT WORK
 
-The newly rebuilt Android APK STILL opens with an empty Billing menu.
+The current V2 Android APK is already installed on the phone.
 
-This means the previous pullCatalog() change did not actually solve the real Android runtime problem.
-
-DO NOT ASSUME IT WORKS.
-DO NOT JUST REBUILD AGAIN.
-FIRST TRACE AND PROVE THE NATIVE ANDROID FLOW.
-
-CURRENT PRODUCTION STATE:
-- Remote Cloudflare D1 products = 51
-- All 51 products are active
-- Web production frontend successfully loads all 51 products
-- Production Worker:
-  https://cafe-pos-api.pruthvigavhane.workers.dev/api
-- Android uses @capacitor-community/sqlite
-- Android SQLite is intended to be the PRIMARY operational database
-
-ARCHITECTURE MUST REMAIN:
-
-Android
-→ Native SQLite
-→ Sync Queue
-→ Cloudflare Worker
-→ Cloudflare D1
-
-==================================================
-PART 1 — FIND THE REAL ANDROID FAILURE
-==================================================
-
-Inspect the CURRENT code and trace the COMPLETE native startup sequence.
-
-Trace these exact points:
-
-1. App.tsx startup
-2. Capacitor native-platform detection
-3. Native SQLite initialization
-4. Database migrations
-5. Product repository initialization
-6. SyncService initialization
-7. pullCatalog()
-8. Actual HTTP request to:
-   https://cafe-pos-api.pruthvigavhane.workers.dev/api/products
-9. Response parsing
-10. Product upsert into Native SQLite
-11. useProducts() / product repository read
-12. Billing rendering
-
-Use Android adb/logcat if available.
-
-ADD TEMPORARY DIAGNOSTIC LOGGING ONLY WHERE REQUIRED to prove each step.
-
-We need explicit evidence for:
-
-- SQLite initialized = YES/NO
-- products table exists = YES/NO
-- initial local product count = number
-- pullCatalog() called = YES/NO
-- Worker request reached = YES/NO
-- Worker response status = number
-- Worker response product count = number
-- SQLite upsert executed = YES/NO
-- final SQLite product count = number
-- Billing query product count = number
-
-DO NOT REMOVE THE DIAGNOSTICS UNTIL THE ROOT CAUSE IS IDENTIFIED.
-
-==================================================
-PART 2 — VERIFY THE NATIVE API REQUEST
-==================================================
-
-Do not assume browser fetch behavior is identical to Android.
-
-Verify the ACTUAL Android runtime can request:
-
-GET
-https://cafe-pos-api.pruthvigavhane.workers.dev/api/products
-
-Check for:
-- network failures
-- wrong base URL
-- malformed endpoint
-- JSON parsing issue
-- CORS/runtime issue
-- Capacitor/native HTTP issue
-- authentication issue
-- initialization timing issue
-
-The expected response must contain 51 products.
-
-If the Android request is failing, fix only that specific problem.
-
-==================================================
-PART 3 — MAKE FIRST-LAUNCH BOOTSTRAP RELIABLE
-==================================================
-
-The first Android launch MUST guarantee that the local catalog is initialized.
-
-Desired behavior:
-
-App starts
-↓
-SQLite initialized
-↓
-migrations complete
-↓
-check local products count
-↓
-if products are missing/empty:
-    perform pullCatalog()
-↓
-wait for pullCatalog() to COMPLETE
-↓
-verify local product count > 0
-↓
-load Billing
-
-Do NOT allow Billing to silently assume that products exist.
-
-The bootstrap must be idempotent.
-
-If products already exist:
-- do not duplicate them
-- update/upsert as appropriate
-
-If the cloud request temporarily fails:
-- do not crash the app
-- keep any existing local catalog
-- retry using the existing sync mechanism
-
-==================================================
-PART 4 — ADD A SAFE FIRST-LAUNCH FALLBACK
-==================================================
+Observed behavior:
+- Android → D1 → Web appears to work.
+- Web → D1 → Android is still NOT working.
+- Android and Web therefore show different order counts.
 
 IMPORTANT:
+DO NOT BUILD ANOTHER APK YET.
 
-If the investigation proves that a fresh install can have ZERO products while the first cloud pull is unavailable, implement a SAFE offline bootstrap fallback using the CURRENT 51 real TBT Cafe products already present in the project.
+We need to determine whether the problem is:
+1. Production Worker endpoint missing/not deployed
+2. Android calling the wrong endpoint
+3. SyncService not running
+4. cursor initialization problem
+5. timestamp filtering problem
+6. response parsing problem
+7. SQLite insertion problem
+8. React Query/local cache refresh problem
 
-The fallback must NOT replace D1 as the authoritative source.
-
-Use this model:
-
-FIRST LAUNCH:
-1. Initialize SQLite.
-2. Populate a bundled initial catalog snapshot ONLY if local products are empty.
-3. Immediately attempt cloud catalog synchronization.
-4. D1 remains authoritative for later updates.
-5. Upsert cloud products into SQLite.
-6. Never create duplicates.
-
-This ensures:
-- fresh install has a usable menu
-- app works even without immediate internet
-- D1 can update the local menu afterward
-
-DO NOT invent products.
-DO NOT change names/prices/categories.
-Use ONLY the existing 51 real TBT Cafe products.
-
-The fallback must be clearly marked in code as a bootstrap snapshot, not a second source of truth.
+This must be investigated against the CURRENT deployed code, not assumed from source code.
 
 ==================================================
-PART 5 — REMOVE THE ADMIN LOGIN WINDOW
+PART 1 — VERIFY PRODUCTION WORKER
 ==================================================
 
-The current Android app shows an unnecessary admin login such as:
+Inspect the CURRENT backend source and identify the exact endpoint intended for:
 
-admin
-admin
+D1 → Android order synchronization
 
-This is NOT required for the café owner pilot.
+Confirm:
+- HTTP method
+- exact path
+- query parameters
+- response format
 
-Remove the admin login gate entirely.
+Then verify whether that exact route exists in the CURRENT deployed Cloudflare Worker.
 
-Desired startup:
+Use a read-only request if possible.
 
-Open app
-↓
-Initialize SQLite/sync
-↓
-Billing screen
+The production Worker is:
 
-No:
-- admin username
-- admin password
-- admin login form
-- "admin/admin"
-- developer login screen
+https://cafe-pos-api.pruthvigavhane.workers.dev/api
 
-Do NOT remove useful Settings functionality.
-Do NOT remove the existing business screens.
-Do NOT add another authentication system.
-Do NOT redesign the UI.
+DO NOT create a production order yet.
 
-The app should simply open directly to the normal POS experience.
+If the endpoint is missing from the deployed Worker:
+- state that clearly
+- deploy ONLY the current backend code required for this endpoint
+- do not change schema
+- do not change products
+- do not create test orders
+- do not modify production order data
 
-==================================================
-PART 6 — VERIFY BILLING AFTER BOOTSTRAP
-==================================================
-
-After the fix, a fresh Android installation must show:
-
-- 51 products
-- real product names
-- real prices
-- real categories
-- category filtering
-- search
-- add to cart
-
-The FIRST TIME the app opens after a clean install, the product count must be demonstrably > 0.
+After deployment, verify the exact endpoint responds correctly.
 
 ==================================================
-PART 7 — TEST A REAL DEVICE
+PART 2 — VERIFY PRODUCTION D1
 ==================================================
 
-After the code fix:
-
-1. Build APK.
-2. Install on a clean Android installation.
-3. Clear app data / uninstall previous build first.
-4. Open app.
-5. Capture logcat if necessary.
-6. Verify the local SQLite product count.
-7. Verify Billing shows the 51 products.
-
-Do NOT declare success based only on:
-- TypeScript build
-- Gradle build
-- APK file size
-- source-code inspection
-
-SUCCESS REQUIRES REAL DEVICE PROOF.
-
-==================================================
-PART 8 — DO NOT TOUCH PRODUCTION DATA
-==================================================
-
-Do NOT:
-- modify remote D1 schema
-- delete products
-- change product prices
-- create orders
-- seed test orders
-- deploy unrelated backend changes
-
-Remote D1 should remain:
+Verify production D1 remains:
 
 products = 51
-orders = 0
-order_items = 0
+
+Do not modify orders during this phase.
 
 ==================================================
-PART 9 — REMOVE TEMPORARY DEBUGGING AFTER PROOF
+PART 3 — VERIFY ANDROID SYNC CODE
 ==================================================
 
-Once the real root cause is found and fixed:
-- remove temporary diagnostic logs if they are not useful in production
-- keep only safe operational error logging
+Inspect CURRENT frontend source used by Android.
+
+Trace exactly:
+
+SyncService
+→ pullSystem/pullCatalog
+→ API request
+→ response
+→ insertCloudOrderBase
+→ local SQLite
+→ query invalidation
+→ Orders/Dashboard
+
+Confirm the V2 APK's intended code uses the same endpoint that is actually deployed.
+
+Pay special attention to:
+- API base URL
+- `/api` prefix
+- endpoint path
+- HTTP method
+- `last_sync` parameter
+- cursor key
+- timestamp format
 
 ==================================================
-FINAL ACCEPTANCE CRITERIA
+PART 4 — CURSOR BUG CHECK
+==================================================
 
-Do NOT report "fixed" unless all are true:
+For a brand-new Android installation with zero local orders:
 
-[ ] No admin/admin login screen
-[ ] Fresh Android install opens directly to POS
-[ ] Native SQLite initializes
-[ ] Products table exists
-[ ] Android can reach production Worker
-[ ] Worker returns 51 products
-[ ] Products are stored in local SQLite
-[ ] Local SQLite contains 51 products
-[ ] Billing reads from local SQLite
-[ ] Billing visibly shows the 51 products
-[ ] App still works if internet is unavailable after bootstrap
-[ ] Cloud sync remains functional
-[ ] No MongoDB
-[ ] No IndexedDB
-[ ] No jeep-sqlite
+What value does `last_order_sync` contain?
 
-FINAL REPORT MUST INCLUDE:
+It MUST allow Android to fetch existing D1 orders.
 
-1. Exact root cause of the previous empty Android menu
-2. Evidence from actual Android runtime/logcat
-3. Files changed
-4. Whether fallback catalog was needed
-5. Final local SQLite product count on device
-6. Confirmation that Billing displayed the products
-7. Confirmation that admin/admin login was removed
-8. APK exact path
-9. Any remaining warnings
+It must NOT initialize itself to the current time before the first pull.
 
-DO NOT declare success until the real Android device test proves the menu works.
+Also verify:
+- UTC handling
+- milliseconds vs seconds
+- `created_at`
+- `voided_at`
+- `>` vs `>=`
+
+==================================================
+PART 5 — LOCAL SQLITE INSERT
+==================================================
+
+Confirm:
+
+insertCloudOrderBase()
+
+actually inserts:
+- order
+- order_items
+
+into Native SQLite.
+
+Confirm it:
+- preserves order ID
+- preserves invoice
+- does not enqueue pulled orders for outbound sync
+- runs transactionally
+
+==================================================
+PART 6 — DO NOT ASSUME QUERY INVALIDATION FIXES EVERYTHING
+==================================================
+
+Verify whether Orders/Dashboard actually read from local SQLite after sync.
+
+If the data is successfully inserted into SQLite but the UI still shows old data, identify exactly which query/cache must be refreshed.
+
+Do not blindly add invalidation calls.
+
+==================================================
+PART 7 — LOCAL AUTOMATED REPRODUCTION
+==================================================
+
+Before touching production order data, reproduce the exact Web → D1 → Android flow locally.
+
+Create:
+- one Web-originated order in local D1
+
+Then execute the Android pull flow.
+
+Prove:
+
+D1 order count = 1
+↓
+Android pull response contains 1 order
+↓
+SQLite order count = 1
+↓
+SQLite item count = correct
+↓
+sync queue did NOT receive the pulled order
+↓
+second pull does NOT duplicate it
+
+Actually execute this test.
+
+Do not say "logically verified".
+
+==================================================
+PART 8 — PRODUCTION DEPLOYMENT RULE
+==================================================
+
+If the production Worker is missing the sync endpoint:
+
+DEPLOY the current backend Worker after local validation.
+
+Do not rebuild Android solely because of a backend deployment.
+
+If Android source code also needs changes:
+THEN build a NEW APK.
+
+If Android code does NOT need changes:
+the existing APK may be sufficient after the Worker fix.
+
+Determine this from the actual code.
+
+==================================================
+PART 9 — FINAL MANUAL TEST PREPARATION
+==================================================
+
+Only after the above passes, report the exact manual production test:
+
+WEB:
+create ONE test order
+
+Then:
+D1
+→ Android sync
+→ Android Orders
+
+We will perform that manually afterward.
+
+Do NOT create that production order during this diagnostic phase.
+
+==================================================
+FINAL REPORT
+==================================================
+
+Return exactly:
+
+1. Production Worker sync endpoint:
+   EXISTS / MISSING
+
+2. Is the endpoint deployed?
+   YES / NO
+
+3. Exact production endpoint:
+   <method + path>
+
+4. Android V2 calls:
+   <method + path>
+
+5. Do they match?
+   YES / NO
+
+6. First-sync cursor behavior:
+   CORRECT / BUG
+
+7. Timestamp handling:
+   CORRECT / BUG
+
+8. SQLite cloud-order insertion:
+   PASS / FAIL
+
+9. UI refresh after SQLite sync:
+   PASS / FAIL
+
+10. Local Web → D1 → Android test:
+    PASS / FAIL
+    with actual counts
+
+11. Production deployment required?
+    YES / NO
+
+12. Android APK rebuild required?
+    YES / NO
+    Explain why.
+
+DO NOT create production test orders.
+DO NOT modify production D1 data unless deploying backend code requires no data changes.
+DO NOT build another APK yet unless the report proves Android code must change.
+STOP.
