@@ -1,24 +1,24 @@
 # Deployment Guide
 
-The deployment paradigm specifically partitions explicit deployments strictly decoupling purely mobile compilation from purely cloud configurations logically explicitly exactly properly correctly completely correctly securely dynamically.
+The deployment paradigm partitions deployments, decoupling mobile compilation from cloud configurations.
 
 ## Backend Deployments (Cloudflare)
-Cloud boundaries heavily execute via simple standard internal `wrangler` CLI commands strictly resolving logic bounds targeting production explicit definitions seamlessly natively correctly perfectly explicitly smoothly smoothly securely exactly securely seamlessly perfectly accurately safely exactly smartly securely safely identically cleanly easily completely accurately natively natively successfully:
+Cloud boundaries execute via simple standard internal `wrangler` CLI commands targeting production seamlessly:
 ```bash
 cd backend
 npm run deploy
 ```
 
-Any modification touching `schema.sql` explicitly triggers exactly explicitly standard Cloudflare DB execution workflows perfectly properly definitively safely cleanly properly accurately natively correctly securely safely perfectly smartly exactly safely purely seamlessly:
+Any modification touching `schema.sql` explicitly triggers standard Cloudflare DB execution workflows:
 ```bash
 npx wrangler d1 execute tbt-cafe-prod --remote --file=./migrations/0001_init.sql
 ```
-*(Verify exact IDs matching standard `wrangler.toml` parameters structurally clearly properly exactly accurately stably strictly safely cleanly correctly cleanly perfectly appropriately appropriately properly optimally effectively natively)*
+*(Verify exact IDs matching standard `wrangler.toml` parameters)*
 
 ## Frontend / Mobile Deployment
-Compile strictly explicit bundles explicitly deploying standard Native output definitions cleanly dynamically purely optimally perfectly appropriately cleanly accurately stably flawlessly cleanly exactly expertly purely correctly natively smoothly definitively flawlessly strictly strictly robustly correctly optimally cleanly perfectly:
-1. Confirm purely exactly standard Environment variable boundaries accurately flawlessly statically solidly explicitly targeting explicitly precise `cafe-pos-api` worker logic dynamically reliably cleanly stably explicitly correctly perfectly correctly statically robustly smoothly perfectly perfectly solidly correctly natively dynamically natively stably expertly purely dynamically stably:
+Compile bundles to deploy standard Native output definitions:
+1. Confirm Environment variable boundaries accurately target your explicit `cafe-pos-api` worker logic:
    `VITE_API_BASE_URL=https://cafe-pos-api.pruthvigavhane.workers.dev/api`
-2. Sync perfectly definitively appropriately natively robustly securely fully cleanly cleanly robustly natively statically optimally fully cleanly precisely successfully:
+2. Sync natively:
    `npm run build && npx cap sync android`
-3. Generate gracefully accurately successfully robustly strictly cleanly precisely purely flawlessly cleanly safely smartly smartly purely structurally accurately cleanly successfully appropriately beautifully smartly securely smoothly exactly successfully securely perfectly exactly cleanly safely safely successfully smoothly perfectly cleanly properly properly beautifully flawlessly accurately natively safely properly securely cleanly manually effortlessly completely.
+3. Generate the application via Android Studio or `./gradlew assembleDebug`.

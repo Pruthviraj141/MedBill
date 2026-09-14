@@ -25,8 +25,9 @@ graph TD
 - Compiles payloads via explicit chunked grouping loops spanning EXACTLY 50 maximum limit payloads limiting API byte payloads scaling seamlessly alongside huge offline durations logically.
 - `MARK SYNCED`: Upon 200 HTTP code verifications natively catching targeted `id` matches within the Cloudflare response string natively, marks items definitively across the local tables directly as `'SYNCED'`.
 
-## Pull Iterations (Products & Settings)
-- Runs identically inside the App boot lifecycle.
+## Pull Iterations (Products, Settings & Web Orders)
+- Runs identically inside the App boot lifecycle **and subsequently every 15000ms inside the background daemon loop natively**.
+- **Bidirectional Ledger Syncing**: D1 natively issues new Web dashboard commands via cursor pagination. SQLite `insertCloudOrderBase` ingests these commands incrementally natively.
 - **Immediate Loading Hydration Check (Idempotency):** During the absolute moment `App.tsx` calls `initDB()`, a microsecond evaluation reads if `products` lists 0 native objects natively. If 0 items explicitly evaluate out, an emergency `defaultCatalog` hydration triggers statically pulling exactly 51 baseline JSON payloads guaranteeing Billing views never delay displaying visually due to network buffering dynamically.
 
 ## Failsafes and Backoff Restarts
