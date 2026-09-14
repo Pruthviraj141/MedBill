@@ -1,3 +1,0 @@
-cafe-pos-api@0.1.0 /home/pruthvi/Downloads/cafe-pos-v1/backend
-└── mongodb@7.6.0
-

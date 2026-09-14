@@ -40,7 +40,7 @@ const nativeImpl = {
     const db = await getDB();
     const search = `${datePrefix}%`;
     const res = await db.query(
-      `SELECT i.name_snapshot as name, SUM(i.quantity) as sold
+      `SELECT i.name_snapshot as name, SUM(i.quantity) as sold, SUM(i.line_total) as revenue
        FROM order_items i
        JOIN orders o ON o.id = i.order_id
        WHERE o.status = 'COMPLETED' AND o.created_at LIKE ?
@@ -70,7 +70,7 @@ const nativeImpl = {
       orders: summary.orders,
       averageBill: summary.averageBill,
       paymentBreakdown: paymentBreakdown.map((r: any) => ({ method: r.payment_method, amount: r.amount })),
-      topProducts: topProducts.map((p: any) => ({ name: p.name, sold: p.sold })),
+      topProducts: topProducts.map((p: any) => ({ name: p.name, sold: p.sold, revenue: p.revenue })),
       peakHour: null as string | null,
       peakHours: [] as any[],
       weekdayPattern: [] as any[],
@@ -103,7 +103,7 @@ const webImpl = {
       orders: data.orders || 0,
       averageBill: data.averageBill || 0,
       paymentBreakdown: data.paymentBreakdown || [], // already in { method, amount }
-      topProducts: data.topProducts || [],           // already in { name, sold }
+      topProducts: (data.topProducts || []).map((p: any) => ({ name: p.name, sold: p.sold, revenue: p.revenue })),           // now mapped with revenue
       peakHour: data.peakHour || null,
       peakHours: data.peakHours || [],
       weekdayPattern: (data.weekdayPattern || []).map((w: any) => ({

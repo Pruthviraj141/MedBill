@@ -6,6 +6,7 @@ export type Product = {
   category?: string;
   price: number;
   icon?: string;
+  image_url?: string;
   active: boolean;
 };
 

@@ -8,6 +8,6 @@ export function useDashboard(period = 'today') {
       const data = await dashboardRepository.getDailyMetrics(period);
       return data;
     },
-    staleTime: 60 * 1000,
+    staleTime: 0,
   });
 }

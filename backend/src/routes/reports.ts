@@ -9,7 +9,7 @@ const getReportForTimeframe = async (c: any, timeModifier: string) => {
     // and filter for COMPLETED only.
     
     // 1. Basic Stats
-    const statsQuery = await c.env.DB.prepare(`
+    const q1 = c.env.DB.prepare(`
       SELECT 
         COUNT(id) as totalOrders,
         COALESCE(SUM(total), 0) as totalRevenue,
@@ -17,29 +17,29 @@ const getReportForTimeframe = async (c: any, timeModifier: string) => {
       FROM orders 
       WHERE status = 'COMPLETED' 
       AND created_at >= datetime('now', ?)
-    `).bind(timeModifier).first();
+    `).bind(timeModifier);
 
     // 2. Payment Breakdown
-    const { results: payments } = await c.env.DB.prepare(`
+    const q2 = c.env.DB.prepare(`
       SELECT payment_method as method, COALESCE(SUM(total), 0) as amount
       FROM orders
       WHERE status = 'COMPLETED' AND created_at >= datetime('now', ?)
       GROUP BY payment_method
-    `).bind(timeModifier).all();
+    `).bind(timeModifier);
 
     // 3. Top Products
-    const { results: topProducts } = await c.env.DB.prepare(`
-      SELECT oi.name_snapshot as name, COALESCE(SUM(oi.quantity), 0) as sold
+    const q3 = c.env.DB.prepare(`
+      SELECT oi.name_snapshot as name, COALESCE(SUM(oi.quantity), 0) as sold, COALESCE(SUM(oi.line_total), 0) as revenue
       FROM order_items oi
       JOIN orders o ON o.id = oi.order_id
       WHERE o.status = 'COMPLETED' AND o.created_at >= datetime('now', ?)
       GROUP BY oi.product_id, oi.name_snapshot
       ORDER BY sold DESC
       LIMIT 5
-    `).bind(timeModifier).all();
+    `).bind(timeModifier);
 
     // 4. Peak Hours (UTC for now, as tz isn't dynamically passed)
-    const { results: peakHours } = await c.env.DB.prepare(`
+    const q4 = c.env.DB.prepare(`
       SELECT 
         CAST(strftime('%H', created_at) AS INTEGER) as hour,
         COUNT(id) as orders,
@@ -48,10 +48,10 @@ const getReportForTimeframe = async (c: any, timeModifier: string) => {
       WHERE status = 'COMPLETED' AND created_at >= datetime('now', ?)
       GROUP BY hour
       ORDER BY orders DESC
-    `).bind(timeModifier).all();
+    `).bind(timeModifier);
 
     // 5. Weekday Pattern
-    const { results: weekdayPattern } = await c.env.DB.prepare(`
+    const q5 = c.env.DB.prepare(`
       SELECT 
         CAST(strftime('%w', created_at) AS INTEGER) as dayNum,
         COUNT(id) as orders,
@@ -60,7 +60,16 @@ const getReportForTimeframe = async (c: any, timeModifier: string) => {
       WHERE status = 'COMPLETED' AND created_at >= datetime('now', ?)
       GROUP BY dayNum
       ORDER BY dayNum ASC
-    `).bind(timeModifier).all();
+    `).bind(timeModifier);
+
+    // Execute concurrently over a single D1 HTTP request
+    const batchResults = await c.env.DB.batch([q1, q2, q3, q4, q5]);
+
+    const statsQuery = batchResults[0].results[0] || { totalOrders: 0, totalRevenue: 0, averageBill: 0 };
+    const payments = batchResults[1].results;
+    const topProducts = batchResults[2].results;
+    const peakHours = batchResults[3].results;
+    const weekdayPattern = batchResults[4].results;
     
     const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     const mappedWeekdays = weekdayPattern.map((r: any) => ({

@@ -3,7 +3,10 @@ import { productsRepository } from '../db/repositories/productsRepository';
 import { settingsRepository } from '../db/repositories/settingsRepository';
 import { SyncQueue, Product, Setting } from '../db/types';
 
-const API_URL = import.meta.env?.VITE_API_URL || 'http://127.0.0.1:8787';
+import { queryClient } from '../lib/queryClient';
+import { defaultCatalog } from '../db/defaultCatalog';
+
+const API_URL = import.meta.env?.VITE_API_BASE_URL || 'http://127.0.0.1:8787/api';
 
 let isSyncing = false;
 let interval: any = null;
@@ -40,8 +43,8 @@ export const syncService = {
         if (item.action === 'VOID') voids.push(item);
       }
 
-      await syncBatch(creates, `${API_URL}/api/sync/orders`, 'orders');
-      await syncBatch(voids, `${API_URL}/api/sync/voids`, 'voids');
+      await syncBatch(creates, `${API_URL}/sync/orders`, 'orders');
+      await syncBatch(voids, `${API_URL}/sync/voids`, 'voids');
 
     } finally {
       isSyncing = false;
@@ -50,16 +53,17 @@ export const syncService = {
 
   pullCatalog: async () => {
     try {
-      const prodRes = await fetch(`${API_URL}/api/sync/products`);
+      const prodRes = await fetch(`${API_URL}/sync/products`);
       if (prodRes.ok) {
         const data = await prodRes.json();
         const products: Product[] = data.products || [];
         for (const p of products) {
           await productsRepository.upsertProduct(p);
         }
+        queryClient.invalidateQueries({ queryKey: ['products'] });
       }
 
-      const setRes = await fetch(`${API_URL}/api/sync/settings`);
+      const setRes = await fetch(`${API_URL}/sync/settings`);
       if (setRes.ok) {
         const data = await setRes.json();
         const settings: Setting[] = data.settings || [];
@@ -68,7 +72,19 @@ export const syncService = {
         }
       }
     } catch (e) {
-      console.error('Failed to pull catalog', e);
+      console.error('Failed to pull catalog via network, attempting emergency offline fallback...', e);
+      try {
+        const localProducts = await productsRepository.getAllProducts();
+        if (localProducts.length === 0) {
+          console.log('[SYNC] First launch network failure detected. Hydrating 51 bundled products.');
+          for (const p of defaultCatalog) {
+            await productsRepository.upsertProduct(p as unknown as Product);
+          }
+          queryClient.invalidateQueries({ queryKey: ['products'] });
+        }
+      } catch (fallbackError) {
+        console.error('Fallback hydration failed', fallbackError);
+      }
     }
   }
 };

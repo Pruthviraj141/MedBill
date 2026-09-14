@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { BarChart3, Receipt, ShoppingBag, ChevronRight, Clock, CreditCard, Sparkles, TrendingUp, X } from 'lucide-react';
+import { BarChart3, Receipt, ShoppingBag, ChevronRight, Clock, CreditCard, Sparkles, TrendingUp, X, RefreshCw } from 'lucide-react';
 import { useDashboard } from '../../hooks/useDashboard';
 import { useOrders } from '../../hooks/useOrders';
 import { formatMoney, formatTime } from '../../utils/format';
@@ -10,6 +10,7 @@ export function Dashboard({ onGo }: { onGo: (view: string) => void }) {
   const [period, setPeriod] = useState<(typeof periods)[number]>('today');
   const [activePeakHour, setActivePeakHour] = useState<number | null>(null);
   const [topProductsOpen, setTopProductsOpen] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   const reportQuery = useDashboard(period);
   const ordersQuery = useOrders();
@@ -75,16 +76,29 @@ export function Dashboard({ onGo }: { onGo: (view: string) => void }) {
     <div className="flex flex-col w-full h-full pb-24 px-4 bg-[#F2F0ED] dark:bg-[#000000] animate-in fade-in slide-in-from-bottom-4 duration-500 overflow-y-auto no-scrollbar pt-2 font-sans tracking-tight" onClick={() => setActivePeakHour(null)}>
       
       {/* Top Main Date Filter (Matches screenshot completely) */}
-      <div className="flex items-center gap-1.5 mb-5 bg-[#171615] dark:bg-[#131313] p-1.5 rounded-full border border-[#2B2B2B] shadow-sm max-w-full no-scrollbar relative overflow-hidden" onClick={(e) => e.stopPropagation()}>
-        {periods.map((item) => (
-          <button 
-            key={item} 
-            className={`flex-1 flex items-center justify-center h-[36px] px-3 rounded-full text-[13px] font-medium transition-all active:scale-[0.98] ${period === item ? 'bg-[#EAD6C0] text-[#1A1917] shadow-md' : 'bg-transparent text-white/50 hover:bg-white/10'}`} 
-            onClick={() => setPeriod(item)}
-          >
-            {item === 'today' ? 'Today' : item === 'week' ? 'Week' : 'Month'}
-          </button>
-        ))}
+      <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center gap-1.5 bg-[#171615] dark:bg-[#131313] p-1.5 rounded-full border border-[#2B2B2B] shadow-sm flex-1 relative overflow-hidden" onClick={(e) => e.stopPropagation()}>
+          {periods.map((item) => (
+            <button 
+              key={item} 
+              className={`flex-1 flex items-center justify-center h-[36px] px-3 rounded-full text-[13px] font-medium transition-all active:scale-[0.98] ${period === item ? 'bg-[#EAD6C0] text-[#1A1917] shadow-md' : 'bg-transparent text-white/50 hover:bg-white/10'}`} 
+              onClick={() => setPeriod(item)}
+            >
+              {item === 'today' ? 'Today' : item === 'week' ? 'Week' : 'Month'}
+            </button>
+          ))}
+        </div>
+        <button 
+          className="ml-3 p-[9px] bg-[#171615] dark:bg-[#131313] text-foreground/80 dark:text-[#EAD6C0] rounded-full border border-[#2B2B2B] active:scale-95 transition-all shadow-sm flex-none" 
+          onClick={async (e) => {
+             e.stopPropagation();
+             setIsRefreshing(true);
+             await Promise.all([reportQuery.refetch(), ordersQuery.refetch()]);
+             setTimeout(() => setIsRefreshing(false), 400); // Visual spin delay
+          }}
+        >
+          <RefreshCw size={18} className={`${isRefreshing ? 'animate-spin opacity-50 dark:opacity-100' : ''}`} strokeWidth={2.5} />
+        </button>
       </div>
 
       {/* Hero Card */}

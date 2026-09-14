@@ -33,6 +33,6 @@ export function Products() {
     {productsQuery.isLoading ? <StateView kind="loading">Loading products</StateView> : null}
     {productsQuery.isError ? <StateView kind="error" onRetry={() => productsQuery.refetch()}>Products could not be loaded</StateView> : null}
     {!productsQuery.isLoading && !productsQuery.isError && products.length === 0 ? <StateView kind="empty">No products yet. Add your first product.</StateView> : null}
-    <section className="product-manage-grid">{products.map((product) => <div className="manage-card" key={product.id}><div className="manage-top"><span className="product-emoji">{product.icon || '•'}</span><span className="stock">{product.active ? 'Active' : 'Inactive'}</span></div><strong>{product.name}</strong><span>{product.category || product.categoryId || 'General'}</span><div className="manage-bottom"><b>{formatMoney(product.price)}</b></div></div>)}</section>
+    <section className="product-manage-grid">{products.map((product) => <div className="manage-card" key={product.id}><div className="manage-top"><span className="product-emoji">{(product.icon || product.image_url)?.startsWith('/') ? <img src={product.icon || product.image_url} alt="" className="w-6 h-6 object-contain" /> : (product.icon || product.image_url || '•')}</span><span className="stock">{product.active ? 'Active' : 'Inactive'}</span></div><strong>{product.name}</strong><span>{product.category || product.categoryId || 'General'}</span><div className="manage-bottom"><b>{formatMoney(product.price)}</b></div></div>)}</section>
   </div>;
 }

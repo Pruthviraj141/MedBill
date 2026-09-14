@@ -2,6 +2,7 @@ import { getDB } from '../database';
 import { Product } from '../types';
 import { Capacitor } from '@capacitor/core';
 import { webApiClient } from '../../lib/webApiClient';
+import { generateId } from '../../utils/generateId';
 
 // ----------------------------------------------------------------------
 // NATIVE IMPLEMENTATION
@@ -46,7 +47,7 @@ const nativeImpl = {
 
   addProduct: async (p: { name: string, categoryId: string, price: number, active: boolean }) => {
     const db = await getDB();
-    const id = crypto.randomUUID();
+    const id = generateId();
     await db.run(
       `INSERT INTO products (id, name, price, category, active, updated_at) 
        VALUES (?, ?, ?, ?, ?, ?)`,
@@ -71,6 +72,7 @@ const webImpl = {
        price: Number(p.price) || 0,
        category: p.category,
        image_url: p.icon || null,
+       icon: p.icon || p.image_url || null,
        active: p.active ? 1 : 0,
        updated_at: new Date().toISOString()
     }));

@@ -1,0 +1,461 @@
+[
+  {
+    "_id": "prod_margarita_pizza",
+    "id": "prod_margarita_pizza",
+    "name": "Margarita Pizza",
+    "price": 100,
+    "category": "Pizza",
+    "icon": "/icons/pizza.png",
+    "active": true
+  },
+  {
+    "_id": "prod_corn_cheese_pizza",
+    "id": "prod_corn_cheese_pizza",
+    "name": "Corn Cheese Pizza",
+    "price": 110,
+    "category": "Pizza",
+    "icon": "/icons/pizza.png",
+    "active": true
+  },
+  {
+    "_id": "prod_farmhouse_pizza",
+    "id": "prod_farmhouse_pizza",
+    "name": "Farmhouse Pizza",
+    "price": 170,
+    "category": "Pizza",
+    "icon": "/icons/pizza.png",
+    "active": true
+  },
+  {
+    "_id": "prod_paneer_pizza",
+    "id": "prod_paneer_pizza",
+    "name": "Paneer Pizza",
+    "price": 150,
+    "category": "Pizza",
+    "icon": "/icons/pizza.png",
+    "active": true
+  },
+  {
+    "_id": "prod_vegie_pizza",
+    "id": "prod_vegie_pizza",
+    "name": "Vegie Pizza",
+    "price": 150,
+    "category": "Pizza",
+    "icon": "/icons/pizza.png",
+    "active": true
+  },
+  {
+    "_id": "prod_veg_cheese_grill_sandwich",
+    "id": "prod_veg_cheese_grill_sandwich",
+    "name": "Veg Cheese Grill Sandwich",
+    "price": 100,
+    "category": "Sandwich",
+    "icon": "/icons/sandwich.png",
+    "active": true
+  },
+  {
+    "_id": "prod_paneer_grill_sandwich",
+    "id": "prod_paneer_grill_sandwich",
+    "name": "Paneer Grill Sandwich",
+    "price": 120,
+    "category": "Sandwich",
+    "icon": "/icons/sandwich.png",
+    "active": true
+  },
+  {
+    "_id": "prod_club_sandwich",
+    "id": "prod_club_sandwich",
+    "name": "Club Sandwich",
+    "price": 70,
+    "category": "Sandwich",
+    "icon": "/icons/sandwich.png",
+    "active": true
+  },
+  {
+    "_id": "prod_corn_cheese_sandwich",
+    "id": "prod_corn_cheese_sandwich",
+    "name": "Corn Cheese Sandwich",
+    "price": 120,
+    "category": "Sandwich",
+    "icon": "/icons/sandwich.png",
+    "active": true
+  },
+  {
+    "_id": "prod_aloo_tikki_burger",
+    "id": "prod_aloo_tikki_burger",
+    "name": "Aloo Tikki Burger",
+    "price": 90,
+    "category": "Burger",
+    "icon": "/icons/burger.png",
+    "active": true
+  },
+  {
+    "_id": "prod_aloo_cheese_burger",
+    "id": "prod_aloo_cheese_burger",
+    "name": "Aloo Cheese Burger",
+    "price": 120,
+    "category": "Burger",
+    "icon": "/icons/burger.png",
+    "active": true
+  },
+  {
+    "_id": "prod_paneer_burger",
+    "id": "prod_paneer_burger",
+    "name": "Paneer Burger",
+    "price": 130,
+    "category": "Burger",
+    "icon": "/icons/burger.png",
+    "active": true
+  },
+  {
+    "_id": "prod_peri_peri_burger",
+    "id": "prod_peri_peri_burger",
+    "name": "Peri Peri Burger",
+    "price": 150,
+    "category": "Burger",
+    "icon": "/icons/burger.png",
+    "active": true
+  },
+  {
+    "_id": "prod_white_sauce_pasta",
+    "id": "prod_white_sauce_pasta",
+    "name": "White Sauce Pasta",
+    "price": 180,
+    "category": "Pasta",
+    "icon": "/icons/pasta.png",
+    "active": true
+  },
+  {
+    "_id": "prod_red_sauce_pasta",
+    "id": "prod_red_sauce_pasta",
+    "name": "Red Sauce Pasta",
+    "price": 180,
+    "category": "Pasta",
+    "icon": "/icons/pasta.png",
+    "active": true
+  },
+  {
+    "_id": "prod_mix_sauce_pasta",
+    "id": "prod_mix_sauce_pasta",
+    "name": "Mix Sauce Pasta",
+    "price": 200,
+    "category": "Pasta",
+    "icon": "/icons/pasta.png",
+    "active": true
+  },
+  {
+    "_id": "prod_garlic_toast",
+    "id": "prod_garlic_toast",
+    "name": "Garlic Toast",
+    "price": 110,
+    "category": "Toast",
+    "icon": "/icons/toast.png",
+    "active": true
+  },
+  {
+    "_id": "prod_cheese_chili_toast",
+    "id": "prod_cheese_chili_toast",
+    "name": "Cheese Chili Toast",
+    "price": 120,
+    "category": "Toast",
+    "icon": "/icons/toast.png",
+    "active": true
+  },
+  {
+    "_id": "prod_salsa_nachos",
+    "id": "prod_salsa_nachos",
+    "name": "Salsa Nachos",
+    "price": 110,
+    "category": "Nachos",
+    "icon": "/icons/nachos.png",
+    "active": true
+  },
+  {
+    "_id": "prod_loaded_nachos",
+    "id": "prod_loaded_nachos",
+    "name": "Loaded Nachos",
+    "price": 140,
+    "category": "Nachos",
+    "icon": "/icons/nachos.png",
+    "active": true
+  },
+  {
+    "_id": "prod_salted_fries",
+    "id": "prod_salted_fries",
+    "name": "Salted Fries",
+    "price": 70,
+    "category": "Fries",
+    "icon": "/icons/fries.png",
+    "active": true
+  },
+  {
+    "_id": "prod_masala_fries",
+    "id": "prod_masala_fries",
+    "name": "Masala Fries",
+    "price": 100,
+    "category": "Fries",
+    "icon": "/icons/fries.png",
+    "active": true
+  },
+  {
+    "_id": "prod_peri_peri_fries",
+    "id": "prod_peri_peri_fries",
+    "name": "Peri Peri Fries",
+    "price": 80,
+    "category": "Fries",
+    "icon": "/icons/fries.png",
+    "active": true
+  },
+  {
+    "_id": "prod_cheese_fries",
+    "id": "prod_cheese_fries",
+    "name": "Cheese Fries",
+    "price": 150,
+    "category": "Fries",
+    "icon": "/icons/fries.png",
+    "active": true
+  },
+  {
+    "_id": "prod_loaded_fries",
+    "id": "prod_loaded_fries",
+    "name": "Loaded Fries",
+    "price": 160,
+    "category": "Fries",
+    "icon": "/icons/fries.png",
+    "active": true
+  },
+  {
+    "_id": "prod_masala_maggi",
+    "id": "prod_masala_maggi",
+    "name": "Masala Maggi",
+    "price": 80,
+    "category": "Maggi",
+    "icon": "🍜",
+    "active": true
+  },
+  {
+    "_id": "prod_vegetable_maggi",
+    "id": "prod_vegetable_maggi",
+    "name": "Vegetable Maggi",
+    "price": 110,
+    "category": "Maggi",
+    "icon": "🍜",
+    "active": true
+  },
+  {
+    "_id": "prod_cheese_maggi",
+    "id": "prod_cheese_maggi",
+    "name": "Cheese Maggi",
+    "price": 100,
+    "category": "Maggi",
+    "icon": "🍜",
+    "active": true
+  },
+  {
+    "_id": "prod_tandoor_maggi",
+    "id": "prod_tandoor_maggi",
+    "name": "Tandoor Maggi",
+    "price": 110,
+    "category": "Maggi",
+    "icon": "🍜",
+    "active": true
+  },
+  {
+    "_id": "prod_red_sauce_spaghetti",
+    "id": "prod_red_sauce_spaghetti",
+    "name": "Red Sauce Spaghetti",
+    "price": 200,
+    "category": "Spaghetti",
+    "icon": "/icons/spaghetti.png",
+    "active": true
+  },
+  {
+    "_id": "prod_white_sauce_spaghetti",
+    "id": "prod_white_sauce_spaghetti",
+    "name": "White Sauce Spaghetti",
+    "price": 200,
+    "category": "Spaghetti",
+    "icon": "/icons/spaghetti.png",
+    "active": true
+  },
+  {
+    "_id": "prod_mix_sauce_spaghetti",
+    "id": "prod_mix_sauce_spaghetti",
+    "name": "Mix Sauce Spaghetti",
+    "price": 250,
+    "category": "Spaghetti",
+    "icon": "/icons/spaghetti.png",
+    "active": true
+  },
+  {
+    "_id": "prod_brownie_sizzling",
+    "id": "prod_brownie_sizzling",
+    "name": "Brownie Sizzling",
+    "price": 150,
+    "category": "Dessert",
+    "icon": "/icons/dessert.png",
+    "active": true
+  },
+  {
+    "_id": "prod_plain_brownie",
+    "id": "prod_plain_brownie",
+    "name": "Plain Brownie",
+    "price": 110,
+    "category": "Dessert",
+    "icon": "/icons/dessert.png",
+    "active": true
+  },
+  {
+    "_id": "prod_fudge_brownie",
+    "id": "prod_fudge_brownie",
+    "name": "Fudge Brownie",
+    "price": 120,
+    "category": "Dessert",
+    "icon": "/icons/dessert.png",
+    "active": true
+  },
+  {
+    "_id": "prod_plain_cold_coffee",
+    "id": "prod_plain_cold_coffee",
+    "name": "Plain Cold Coffee",
+    "price": 80,
+    "category": "Coffee",
+    "icon": "/icons/coffee.png",
+    "active": true
+  },
+  {
+    "_id": "prod_irish_cold_coffee",
+    "id": "prod_irish_cold_coffee",
+    "name": "Irish Cold Coffee",
+    "price": 100,
+    "category": "Coffee",
+    "icon": "/icons/coffee.png",
+    "active": true
+  },
+  {
+    "_id": "prod_chocolate_cold_coffee",
+    "id": "prod_chocolate_cold_coffee",
+    "name": "Chocolate Cold Coffee",
+    "price": 100,
+    "category": "Coffee",
+    "icon": "/icons/coffee.png",
+    "active": true
+  },
+  {
+    "_id": "prod_hazelnut_cold_coffee",
+    "id": "prod_hazelnut_cold_coffee",
+    "name": "Hazelnut Cold Coffee",
+    "price": 100,
+    "category": "Coffee",
+    "icon": "/icons/coffee.png",
+    "active": true
+  },
+  {
+    "_id": "prod_cold_coffee_with_ice_cream",
+    "id": "prod_cold_coffee_with_ice_cream",
+    "name": "Cold Coffee with Ice Cream",
+    "price": 100,
+    "category": "Coffee",
+    "icon": "/icons/coffee.png",
+    "active": true
+  },
+  {
+    "_id": "prod_brownie_cold_coffee",
+    "id": "prod_brownie_cold_coffee",
+    "name": "Brownie Cold Coffee",
+    "price": 150,
+    "category": "Coffee",
+    "icon": "/icons/coffee.png",
+    "active": true
+  },
+  {
+    "_id": "prod_strawberry_shake",
+    "id": "prod_strawberry_shake",
+    "name": "Strawberry Shake",
+    "price": 90,
+    "category": "Shake",
+    "icon": "🥤",
+    "active": true
+  },
+  {
+    "_id": "prod_mango_shake",
+    "id": "prod_mango_shake",
+    "name": "Mango Shake",
+    "price": 90,
+    "category": "Shake",
+    "icon": "🥤",
+    "active": true
+  },
+  {
+    "_id": "prod_chocolate_milk_shake",
+    "id": "prod_chocolate_milk_shake",
+    "name": "Chocolate Milk Shake",
+    "price": 90,
+    "category": "Shake",
+    "icon": "🥤",
+    "active": true
+  },
+  {
+    "_id": "prod_brownie_milk_shake",
+    "id": "prod_brownie_milk_shake",
+    "name": "Brownie Milk Shake",
+    "price": 110,
+    "category": "Shake",
+    "icon": "🥤",
+    "active": true
+  },
+  {
+    "_id": "prod_corn_cheese_ball",
+    "id": "prod_corn_cheese_ball",
+    "name": "Corn Cheese Ball",
+    "price": 130,
+    "category": "Nuggets",
+    "icon": "🍘",
+    "active": true
+  },
+  {
+    "_id": "prod_potato_cheese_ball",
+    "id": "prod_potato_cheese_ball",
+    "name": "Potato Cheese Ball",
+    "price": 110,
+    "category": "Nuggets",
+    "icon": "🍘",
+    "active": true
+  },
+  {
+    "_id": "prod_mojito",
+    "id": "prod_mojito",
+    "name": "Mojito",
+    "price": 90,
+    "category": "Mocktail",
+    "icon": "🍹",
+    "active": true
+  },
+  {
+    "_id": "prod_green_applemocktail",
+    "id": "prod_green_applemocktail",
+    "name": "Green AppleMocktail",
+    "price": 90,
+    "category": "Mocktail",
+    "icon": "🍹",
+    "active": true
+  },
+  {
+    "_id": "prod_lemonade",
+    "id": "prod_lemonade",
+    "name": "Lemonade",
+    "price": 90,
+    "category": "Mocktail",
+    "icon": "🍹",
+    "active": true
+  },
+  {
+    "_id": "prod_masala_lemonade",
+    "id": "prod_masala_lemonade",
+    "name": "Masala Lemonade",
+    "price": 110,
+    "category": "Mocktail",
+    "icon": "🍹",
+    "active": true
+  }
+]

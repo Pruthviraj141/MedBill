@@ -5,43 +5,43 @@ import path from 'path';
 // Extracted exactly from old seed.ts
 const products = [
   // PIZZA 🍕
-  { name: 'Margarita Pizza', category: 'Pizza', price: 100, icon: '🍕', active: true },
-  { name: 'Corn Cheese Pizza', category: 'Pizza', price: 110, icon: '🍕', active: true },
-  { name: 'Farmhouse Pizza', category: 'Pizza', price: 170, icon: '🍕', active: true },
-  { name: 'Paneer Pizza', category: 'Pizza', price: 150, icon: '🍕', active: true },
-  { name: 'Vegie Pizza', category: 'Pizza', price: 150, icon: '🍕', active: true },
+  { name: 'Margarita Pizza', category: 'Pizza', price: 100, icon: '/icons/pizza.png', active: true },
+  { name: 'Corn Cheese Pizza', category: 'Pizza', price: 110, icon: '/icons/pizza.png', active: true },
+  { name: 'Farmhouse Pizza', category: 'Pizza', price: 170, icon: '/icons/pizza.png', active: true },
+  { name: 'Paneer Pizza', category: 'Pizza', price: 150, icon: '/icons/pizza.png', active: true },
+  { name: 'Vegie Pizza', category: 'Pizza', price: 150, icon: '/icons/pizza.png', active: true },
   
   // SANDWICH 🥪
-  { name: 'Veg Cheese Grill Sandwich', category: 'Sandwich', price: 100, icon: '🥪', active: true },
-  { name: 'Paneer Grill Sandwich', category: 'Sandwich', price: 120, icon: '🥪', active: true },
-  { name: 'Club Sandwich', category: 'Sandwich', price: 70, icon: '🥪', active: true },
-  { name: 'Corn Cheese Sandwich', category: 'Sandwich', price: 120, icon: '🥪', active: true },
+  { name: 'Veg Cheese Grill Sandwich', category: 'Sandwich', price: 100, icon: '/icons/sandwich.png', active: true },
+  { name: 'Paneer Grill Sandwich', category: 'Sandwich', price: 120, icon: '/icons/sandwich.png', active: true },
+  { name: 'Club Sandwich', category: 'Sandwich', price: 70, icon: '/icons/sandwich.png', active: true },
+  { name: 'Corn Cheese Sandwich', category: 'Sandwich', price: 120, icon: '/icons/sandwich.png', active: true },
 
   // BURGER 🍔
-  { name: 'Aloo Tikki Burger', category: 'Burger', price: 90, icon: '🍔', active: true },
-  { name: 'Aloo Cheese Burger', category: 'Burger', price: 120, icon: '🍔', active: true },
-  { name: 'Paneer Burger', category: 'Burger', price: 130, icon: '🍔', active: true },
-  { name: 'Peri Peri Burger', category: 'Burger', price: 150, icon: '🍔', active: true },
+  { name: 'Aloo Tikki Burger', category: 'Burger', price: 90, icon: '/icons/burger.png', active: true },
+  { name: 'Aloo Cheese Burger', category: 'Burger', price: 120, icon: '/icons/burger.png', active: true },
+  { name: 'Paneer Burger', category: 'Burger', price: 130, icon: '/icons/burger.png', active: true },
+  { name: 'Peri Peri Burger', category: 'Burger', price: 150, icon: '/icons/burger.png', active: true },
 
   // PASTA 🍝
-  { name: 'White Sauce Pasta', category: 'Pasta', price: 180, icon: '🍝', active: true },
-  { name: 'Red Sauce Pasta', category: 'Pasta', price: 180, icon: '🍝', active: true },
-  { name: 'Mix Sauce Pasta', category: 'Pasta', price: 200, icon: '🍝', active: true },
+  { name: 'White Sauce Pasta', category: 'Pasta', price: 180, icon: '/icons/pasta.png', active: true },
+  { name: 'Red Sauce Pasta', category: 'Pasta', price: 180, icon: '/icons/pasta.png', active: true },
+  { name: 'Mix Sauce Pasta', category: 'Pasta', price: 200, icon: '/icons/pasta.png', active: true },
 
   // TOAST 🍞
-  { name: 'Garlic Toast', category: 'Toast', price: 110, icon: '🍞', active: true },
-  { name: 'Cheese Chili Toast', category: 'Toast', price: 120, icon: '🍞', active: true },
+  { name: 'Garlic Toast', category: 'Toast', price: 110, icon: '/icons/toast.png', active: true },
+  { name: 'Cheese Chili Toast', category: 'Toast', price: 120, icon: '/icons/toast.png', active: true },
 
   // NACHOS 🌮
-  { name: 'Salsa Nachos', category: 'Nachos', price: 110, icon: '🌮', active: true },
-  { name: 'Loaded Nachos', category: 'Nachos', price: 140, icon: '🌮', active: true },
+  { name: 'Salsa Nachos', category: 'Nachos', price: 110, icon: '/icons/nachos.png', active: true },
+  { name: 'Loaded Nachos', category: 'Nachos', price: 140, icon: '/icons/nachos.png', active: true },
 
   // FRIES 🍟
-  { name: 'Salted Fries', category: 'Fries', price: 70, icon: '🍟', active: true },
-  { name: 'Masala Fries', category: 'Fries', price: 100, icon: '🍟', active: true },
-  { name: 'Peri Peri Fries', category: 'Fries', price: 80, icon: '🍟', active: true },
-  { name: 'Cheese Fries', category: 'Fries', price: 150, icon: '🍟', active: true },
-  { name: 'Loaded Fries', category: 'Fries', price: 160, icon: '🍟', active: true },
+  { name: 'Salted Fries', category: 'Fries', price: 70, icon: '/icons/fries.png', active: true },
+  { name: 'Masala Fries', category: 'Fries', price: 100, icon: '/icons/fries.png', active: true },
+  { name: 'Peri Peri Fries', category: 'Fries', price: 80, icon: '/icons/fries.png', active: true },
+  { name: 'Cheese Fries', category: 'Fries', price: 150, icon: '/icons/fries.png', active: true },
+  { name: 'Loaded Fries', category: 'Fries', price: 160, icon: '/icons/fries.png', active: true },
 
   // MAGGI 🍜
   { name: 'Masala Maggi', category: 'Maggi', price: 80, icon: '🍜', active: true },
@@ -50,22 +50,22 @@ const products = [
   { name: 'Tandoor Maggi', category: 'Maggi', price: 110, icon: '🍜', active: true },
 
   // SPAGHETTI 🍝
-  { name: 'Red Sauce Spaghetti', category: 'Spaghetti', price: 200, icon: '🍝', active: true },
-  { name: 'White Sauce Spaghetti', category: 'Spaghetti', price: 200, icon: '🍝', active: true },
-  { name: 'Mix Sauce Spaghetti', category: 'Spaghetti', price: 250, icon: '🍝', active: true },
+  { name: 'Red Sauce Spaghetti', category: 'Spaghetti', price: 200, icon: '/icons/spaghetti.png', active: true },
+  { name: 'White Sauce Spaghetti', category: 'Spaghetti', price: 200, icon: '/icons/spaghetti.png', active: true },
+  { name: 'Mix Sauce Spaghetti', category: 'Spaghetti', price: 250, icon: '/icons/spaghetti.png', active: true },
 
   // DESSERT 🍰
-  { name: 'Brownie Sizzling', category: 'Dessert', price: 150, icon: '🍫', active: true },
-  { name: 'Plain Brownie', category: 'Dessert', price: 110, icon: '🍫', active: true },
-  { name: 'Fudge Brownie', category: 'Dessert', price: 120, icon: '🍫', active: true },
+  { name: 'Brownie Sizzling', category: 'Dessert', price: 150, icon: '/icons/dessert.png', active: true },
+  { name: 'Plain Brownie', category: 'Dessert', price: 110, icon: '/icons/dessert.png', active: true },
+  { name: 'Fudge Brownie', category: 'Dessert', price: 120, icon: '/icons/dessert.png', active: true },
 
   // COFFEE ☕
-  { name: 'Plain Cold Coffee', category: 'Coffee', price: 80, icon: '🧋', active: true },
-  { name: 'Irish Cold Coffee', category: 'Coffee', price: 100, icon: '🧋', active: true },
-  { name: 'Chocolate Cold Coffee', category: 'Coffee', price: 100, icon: '🧋', active: true },
-  { name: 'Hazelnut Cold Coffee', category: 'Coffee', price: 100, icon: '🧋', active: true },
-  { name: 'Cold Coffee with Ice Cream', category: 'Coffee', price: 100, icon: '🧋', active: true },
-  { name: 'Brownie Cold Coffee', category: 'Coffee', price: 150, icon: '🧋', active: true },
+  { name: 'Plain Cold Coffee', category: 'Coffee', price: 80, icon: '/icons/coffee.png', active: true },
+  { name: 'Irish Cold Coffee', category: 'Coffee', price: 100, icon: '/icons/coffee.png', active: true },
+  { name: 'Chocolate Cold Coffee', category: 'Coffee', price: 100, icon: '/icons/coffee.png', active: true },
+  { name: 'Hazelnut Cold Coffee', category: 'Coffee', price: 100, icon: '/icons/coffee.png', active: true },
+  { name: 'Cold Coffee with Ice Cream', category: 'Coffee', price: 100, icon: '/icons/coffee.png', active: true },
+  { name: 'Brownie Cold Coffee', category: 'Coffee', price: 150, icon: '/icons/coffee.png', active: true },
 
   // SHAKE 🥤
   { name: 'Strawberry Shake', category: 'Shake', price: 90, icon: '🥤', active: true },
@@ -96,22 +96,6 @@ async function migrate() {
   
   // 1. Fetch current D1 products to determine counts
   let existingIds = new Set();
-  const execOpts = { 
-    stdio: ['pipe', 'pipe', 'ignore'], 
-    env: { ...process.env, WRANGLER_SEND_METRICS: 'false' } 
-  };
-
-  try {
-    const listResultStr = execSync(`npx wrangler d1 execute tbt-cafe-prod --local -y --command "SELECT id FROM products;" --json`, execOpts).toString();
-    const listResult = JSON.parse(listResultStr);
-    
-    // Process results varying based on the array structure of wrangler output
-    if (listResult && listResult.length > 0 && listResult[0].results) {
-      listResult[0].results.forEach(row => existingIds.add(row.id));
-    }
-  } catch (err) {
-    // Database might not be initialized or query failed
-  }
 
   let inserted = 0;
   let updated = 0;
@@ -162,35 +146,8 @@ async function migrate() {
   const tempSqlFile = path.resolve(process.cwd(), 'temp_migration.sql');
   fs.writeFileSync(tempSqlFile, sqlStatements.join('\n'));
 
-  try {
-    // 2. Execute Batch via Wrangler
-    execSync(`npx wrangler d1 execute tbt-cafe-prod --local -y --file="${tempSqlFile}"`, { stdio: 'pipe', env: { ...process.env, WRANGLER_SEND_METRICS: 'false' } });
-    
-    // 3. Verify Product Count
-    const verifyResultStr = execSync(`npx wrangler d1 execute tbt-cafe-prod --local -y --command "SELECT count(*) as total FROM products;" --json`, execOpts).toString();
-    const verifyResult = JSON.parse(verifyResultStr);
-    
-    let dbCount = 0;
-    if (verifyResult && verifyResult.length > 0 && verifyResult[0].results) {
-       dbCount = verifyResult[0].results[0].total;
-    }
-
-    console.log(`Inserted: ${inserted}`);
-    console.log(`Updated: ${updated}`);
-    console.log(`Skipped: ${skipped}`);
-    console.log(`Duplicates: ${duplicates}`);
-    console.log('');
-    console.log(`Verification:`);
-    console.log(`D1 products: ${dbCount}`);
-    console.log('');
-    console.log(`SUCCESS`);
-  } catch (err) {
-    console.error('MIGRATION FAILED:', err.message);
-  } finally {
-    if (fs.existsSync(tempSqlFile)) {
-      fs.unlinkSync(tempSqlFile);
-    }
-  }
+  console.log(`Generated migration SQL at ${tempSqlFile}`);
+  console.log(`Now run: npx wrangler d1 execute tbt-cafe-prod --remote -y --file="${tempSqlFile}"`);
 }
 
 migrate();

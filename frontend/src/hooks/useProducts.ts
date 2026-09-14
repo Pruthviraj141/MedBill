@@ -13,6 +13,8 @@ export function useProducts() {
         name: p.name,
         price: p.price,
         category: p.category,
+        icon: (p as any).icon || undefined,
+        image_url: p.image_url || undefined,
         active: p.active === 1
       }));
     },

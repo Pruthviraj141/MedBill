@@ -1,10 +1,11 @@
 import { getDB } from '../database';
 import { SyncQueue } from '../types';
+import { generateId } from '../../utils/generateId';
 
 export const syncQueueRepository = {
   // Returns raw statements so they can be injected into the main order transaction atomically
   getEnqueueStatement: (order_id: string, action: 'CREATE' | 'VOID', payload: any) => {
-    const id = crypto.randomUUID();
+    const id = generateId();
     const created_at = new Date().toISOString();
     const payloadStr = JSON.stringify(payload);
     return {

@@ -1,43 +1,40 @@
-# Cafe POS V1
+# TBT Cafe POS
 
-Mobile-first café billing prototype built around the intended production architecture:
+A modern, offline-first Point of Sale (POS) system engineered specifically for TBT Cafe. 
 
-- React + Vite + TypeScript
-- Capacitor-ready Android shell
-- Hono backend (Cloudflare Workers)
-- MongoDB Atlas integration boundary
-- Local-first storage abstraction (browser preview uses localStorage; Android can swap in Capacitor SQLite)
-- Printer service abstraction for Bluetooth/Wi-Fi ESC/POS
+The application is built on a highly resilient mobile topology that ensures seamless billing operations on Android tablets regardless of active internet connectivity, utilizing an isolated Native SQLite transaction engine coupled with background synchronization to Cloudflare edge networks.
 
-## Run the mobile UI preview
+## Key Capabilities
+- **100% Offline-First Operations**: Cafe operations never halt. Taking cash/UPI orders works permanently offline without internet connections.
+- **Native Data Engine**: Direct, ultra-low latency hardware bindings to Android's built-in SQLite engine, bypassing browser-based database limits.
+- **Background Synchronization**: Background daemons elegantly resolve queue mismatches and upload telemetry to the cloud implicitly whenever cell coverage returns. 
+- **Cloud-Synced Master Catalog**: Product updates flow automatically from the cloud database downwards to all connected terminals.
+- **Advanced Real-time Analytics**: Tracks peak hours, sales items, and revenue matrix charts locally.
 
-```bash
-cd frontend
-npm install
-npm run dev
-```
+## Architecture Pipeline
+- **Frontend Container**: React + Vite + Capacitor (Android 35).
+- **Frontend Storage Engine**: Capacitor Native SQLite (`@capacitor-community/sqlite`).
+- **Backend Edge Network**: Cloudflare Worker APIs via Hono.
+- **Cloud Source of Truth**: Cloudflare D1 Serverless SQL.
 
-Open the printed local URL on desktop or phone.
+*(See [ARCHITECTURE](docs/ARCHITECTURE.md) for deeper insight)*
 
-## Add Capacitor Android later
+## Repository Structure
+- `/frontend`: The core React web app and Capacitor configurations.
+- `/backend`: The Hono API layer, Cloudflare deployment configurations, and D1 database commands.
+- `/docs`: Specialized developer resources and environment troubleshooting.
 
-```bash
-cd frontend
-npm install
-npm run build
-npx cap add android
-npx cap sync android
-npx cap open android
-```
+*(See [PROJECT STRUCTURE](docs/PROJECT_STRUCTURE.md) for directory maps)*
 
-Android Studio is optional for development in principle, but building/native printer integrations may still require Android SDK/Gradle tooling.
+## Environment Setup & Development
+For detailed instructions encompassing Node layouts, API definitions, testing, and production Worker integration:
+- See the [DEVELOPMENT.md](docs/DEVELOPMENT.md) guide to spin up the local D1 proxy environment.
+- See the [ANDROID.md](docs/ANDROID.md) guide for compiling the Capacitor Sandbox APK.
 
-## Backend
-
-```bash
-cd backend
-npm install
-npm run dev
-```
-
-The backend is intentionally small in V1. Replace the repository layer with MongoDB Atlas calls through the Hono routes.
+## Technical Documentation
+Please reference our technical manuals before modifying state or pipeline configurations:
+- [Data Storage & Schemas](docs/DATABASE.md)
+- [Synchronization Logic](docs/SYNC.md)
+- [Worker API Routes](docs/API.md)
+- [Production Deployment](docs/DEPLOYMENT.md)
+- [Troubleshooting & Gotchas](docs/TROUBLESHOOTING.md)

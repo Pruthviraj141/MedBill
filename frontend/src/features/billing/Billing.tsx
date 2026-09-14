@@ -246,7 +246,9 @@ export function Billing() {
                 <div className="flex flex-col">
                   {items.map((item) => (
                     <div className="flex items-center gap-3 py-3.5 border-b border-border/40" key={item.id}>
-                      <span className="w-10 h-10 flex flex-none items-center justify-center text-[22px] bg-secondary/60 rounded-xl">{item.icon || '•'}</span>
+                      <span className="w-10 h-10 flex flex-none items-center justify-center text-[22px] bg-secondary/60 rounded-xl">
+                        {(item.icon || item.image_url)?.startsWith('/') ? <img src={item.icon || item.image_url} alt={item.name} className="w-7 h-7 object-contain" /> : (item.icon || item.image_url || '•')}
+                      </span>
                       <div className="flex-1 min-w-0">
                         <strong className="block text-[14px] font-bold text-foreground truncate">{item.name}</strong>
                         <span className="block text-[12px] text-muted-foreground mt-0.5">{formatMoney(item.price)}</span>
@@ -336,8 +338,10 @@ const ProductCard = memo(function ProductCard({
       aria-label={`${product.name} ${formatMoney(product.price)}`}
     >
       <div className="relative w-full pt-[90%] bg-[#F5F2EF] dark:bg-[#2C2C2E] overflow-hidden flex-none">
-        {product.icon
-          ? <span className="absolute inset-0 flex items-center justify-center text-[44px] drop-shadow-sm">{product.icon}</span>
+        {(product.icon || product.image_url)
+          ? <span className="absolute inset-0 flex items-center justify-center text-[44px] drop-shadow-sm">
+              {(product.icon || product.image_url)?.startsWith('/') ? <img src={product.icon || product.image_url} alt={product.name} className="w-20 h-20 object-contain drop-shadow-md" /> : (product.icon || product.image_url)}
+            </span>
           : <span className="absolute inset-0 flex items-center justify-center text-[38px] drop-shadow-sm opacity-60" aria-hidden>☕</span>
         }
       </div>

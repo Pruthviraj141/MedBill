@@ -1,709 +1,295 @@
-STEP 5 — CONNECT THE EXISTING FRONTEND TO SQLITE-FIRST + D1 SYNC
+CRITICAL ANDROID PRODUCT BOOTSTRAP FAILURE + REMOVE ADMIN LOGIN
 
-Completed and verified:
+The newly rebuilt Android APK STILL opens with an empty Billing menu.
 
-✅ STEP 1 — SQLite + D1 schema
-✅ STEP 2 — Hono + D1 backend
-✅ STEP 3 — Local Capacitor SQLite data layer
-✅ STEP 3B — SQLite terminal tests: 20/20 PASS
-✅ STEP 4 — SQLite ↔ D1 sync engine
-✅ STEP 4 — Sync test suite: 100% PASS
+This means the previous pullCatalog() change did not actually solve the real Android runtime problem.
 
-NOW integrate the EXISTING React frontend with the new offline-first data architecture.
+DO NOT ASSUME IT WORKS.
+DO NOT JUST REBUILD AGAIN.
+FIRST TRACE AND PROVE THE NATIVE ANDROID FLOW.
 
-==================================================
-FINAL ARCHITECTURE
-==================================================
-
-React UI
-   ↓
-Local repository/service layer
-   ↓
-LOCAL SQLITE
-   ↓
-SyncService
-   ↓
-Cloudflare Worker + Hono
-   ↓
-D1
-
-SQLite is the PRIMARY operational data source.
-
-D1 is the cloud synchronized copy.
-
-NORMAL USER ACTIONS MUST NOT WAIT FOR CLOUD SYNC.
-
-==================================================
-ABSOLUTE UI PROTECTION
-==================================================
-
-DO NOT redesign or visually modify:
-
-- Billing
-- Dashboard
-- Orders
-- Settings
-- bottom navigation
-- theme system
-- typography
-- spacing
-- cards
-- charts
-- animations
-- product cards
-- checkout success UI
-
-The existing UI is considered APPROVED.
-
-This step is data-layer integration only.
-
-==================================================
-1. INSPECT CURRENT FRONTEND DATA FLOW
-==================================================
-
-Before changing anything, inspect:
-
-- React Query providers
-- useProducts
-- useOrders
-- useDashboard
-- checkout flow
-- settings hooks
-- API client
-- authentication hooks
-- route loading behavior
-
-Create a table:
-
-SCREEN / ACTION | CURRENT DATA SOURCE | NEW DATA SOURCE
-
-Do not modify until the current flow is understood.
-
-==================================================
-2. PRODUCTS
-==================================================
-
-Change product reads to LOCAL SQLITE.
-
-Billing should load products from:
-
-productsRepository
-
-NOT:
-
-fetch('/api/products')
-
-during normal operation.
-
-Product search:
-→ local
-
-Category filter:
-→ local
-
-Recent filter:
-→ local
-
-Product selection:
-→ local
-
-No network request for these actions.
-
-Products should already exist in SQLite after bootstrap/synchronization.
-
-==================================================
-3. BILLING CART
-==================================================
-
-Cart state remains local.
-
-These must NOT contact the network:
-
-- add product
-- increase quantity
-- decrease quantity
-- remove product
-- calculate subtotal
-- display total
-
-Do not move cart state to D1.
-
-==================================================
-4. CHECKOUT
-==================================================
-
-Replace the current network-first checkout flow with:
-
-Bill Now
-→ checkoutService
-→ SQLite transaction
-→ success returned locally
-→ trigger SyncService in background
-
-SQLite transaction must already contain:
-
-order
-+
-order_items
-+
-sync_queue
-
-The user must NOT wait for D1.
-
-The success screen should appear immediately after the local transaction succeeds.
-
-DO NOT fake success.
-
-A locally committed order is a legitimate POS success because it is safely persisted locally and queued for cloud synchronization.
-
-==================================================
-5. CASH
-==================================================
-
-Verify:
-
-paymentMethod = CASH
-
-flows through:
-
-UI
-→ checkoutService
-→ SQLite
-→ sync_queue
-→ D1
-
-No other payment method.
-
-==================================================
-6. UPI
-==================================================
-
-Verify:
-
-paymentMethod = UPI
-
-same local-first flow.
-
-No Card.
-No Other.
-
-==================================================
-7. TOTAL CALCULATION
-==================================================
-
-The displayed and stored total must equal:
-
-sum(unit_price × quantity)
-
-No:
-
-tax
-GST
-service charge
-convenience fee
-surcharge
-
-The frontend should use the same money representation established in STEP 1.
-
-Do not duplicate conflicting money calculations in several components.
-
-Use checkoutService as the source of truth.
-
-==================================================
-8. ORDERS SCREEN
-==================================================
-
-Change Orders data source to:
-
-ordersRepository
-
-Orders should load from SQLite first.
-
-The Orders UI must work with:
-
-internet OFF.
-
-Show:
-
-COMPLETED
-VOIDED
-
-according to the existing UI behavior.
-
-Do not remove VOIDED orders from history.
-
-==================================================
-9. VOID TRANSACTION
-==================================================
-
-When user voids an order:
-
-UI
-→ ordersRepository.voidOrder()
-→ SQLite transaction
-→ enqueue sync operation
-→ update UI immediately
-
-Do not wait for D1.
-
-Do not hard-delete.
-
-Do not refresh entire application state unnecessarily.
-
-==================================================
-10. DASHBOARD
-==================================================
-
-Change Dashboard data source to:
-
-dashboardRepository
-
-Dashboard should calculate/read from LOCAL SQLITE first.
-
-Required metrics:
-
-- sales
-- completed order count
-- average bill
-- sales activity
-- peak hours
-- top products
-- payment mix
-- recent orders
-
-Only COMPLETED orders count.
-
-VOIDED orders must not affect analytics.
-
-Payment mix:
-CASH
-UPI
-
-Do not call the cloud reports API just to display local dashboard data during normal operation.
-
-==================================================
-11. DASHBOARD REFRESH
-==================================================
-
-When a new local order is created:
-
-Do NOT trigger several API refetches.
-
-Instead:
-- invalidate/update local repository data
-- refresh Dashboard from SQLite when Dashboard is opened/active
-
-Do not refetch products after checkout.
-
-Do not fetch reports from D1 immediately after every order.
-
-==================================================
-12. SETTINGS
-==================================================
-
-Use settingsRepository for appropriate settings.
-
-Keep purely local settings such as theme local if Step 1 defined them as local.
-
-Do not send every theme change to D1.
-
-==================================================
-13. REACT QUERY
-==================================================
-
-React Query may still be used for UI/server state where useful, but it must no longer be treated as the primary database.
-
-Do NOT blindly remove React Query.
-
-Use it as a caching/orchestration layer around repository calls if helpful.
+CURRENT PRODUCTION STATE:
+- Remote Cloudflare D1 products = 51
+- All 51 products are active
+- Web production frontend successfully loads all 51 products
+- Production Worker:
+  https://cafe-pos-api.pruthvigavhane.workers.dev/api
+- Android uses @capacitor-community/sqlite
+- Android SQLite is intended to be the PRIMARY operational database
 
-Do not create network queries for data that can be read locally.
+ARCHITECTURE MUST REMAIN:
 
-Avoid:
-- refetchOnWindowFocus storms
-- repeated mount fetches
-- unnecessary invalidations
-- duplicate queries
+Android
+→ Native SQLite
+→ Sync Queue
+→ Cloudflare Worker
+→ Cloudflare D1
 
 ==================================================
-14. INITIAL APPLICATION BOOTSTRAP
+PART 1 — FIND THE REAL ANDROID FAILURE
 ==================================================
 
-Application startup should:
+Inspect the CURRENT code and trace the COMPLETE native startup sequence.
 
-1. initialize SQLite
-2. ensure migrations
-3. load local state
-4. make the application usable
-5. allow SyncService to synchronize in background
+Trace these exact points:
 
-Do NOT block the UI while waiting for cloud synchronization.
+1. App.tsx startup
+2. Capacitor native-platform detection
+3. Native SQLite initialization
+4. Database migrations
+5. Product repository initialization
+6. SyncService initialization
+7. pullCatalog()
+8. Actual HTTP request to:
+   https://cafe-pos-api.pruthvigavhane.workers.dev/api/products
+9. Response parsing
+10. Product upsert into Native SQLite
+11. useProducts() / product repository read
+12. Billing rendering
 
-For a fresh installation with no local products, perform the required initial cloud bootstrap/sync.
+Use Android adb/logcat if available.
 
-For an existing local installation, use SQLite immediately.
+ADD TEMPORARY DIAGNOSTIC LOGGING ONLY WHERE REQUIRED to prove each step.
 
-==================================================
-15. AUTHENTICATION
-==================================================
-
-Preserve the existing authentication experience.
-
-Do not introduce a new login architecture.
-
-After authentication:
-
-- local SQLite remains available
-- sync credentials/session are used only when cloud operations are needed
-
-Do not require an internet request for ordinary local POS interactions once the local app is initialized.
-
-==================================================
-16. NETWORK FAILURE
-==================================================
-
-Test:
-
-Internet OFF.
-
-Verify all normal POS operations continue:
-
-- Billing
-- product browsing
-- search
-- categories
-- cart
-- checkout
-- Orders
-- VOID
-- Dashboard
-
-Cloud sync should simply remain pending.
-
-==================================================
-17. NETWORK RESTORATION
-==================================================
-
-Test:
-
-Internet ON.
-
-SyncService should automatically process pending operations.
-
-Verify:
-
-SQLite order
-→ sync_queue
-→ Worker
-→ D1
-
-and:
-
-successful sync
-→ queue state updated
-
-No duplicate orders.
-
-==================================================
-18. DO NOT DOUBLE-SYNC
-==================================================
-
-A single local checkout must NOT generate:
-
-- multiple sync operations for the same order
-- duplicate D1 orders
-- duplicate order_items
-
-Inspect React effects and mutation callbacks carefully.
-
-A checkout success state should not accidentally trigger another checkout.
-
-==================================================
-19. LOCAL UI UPDATE
-==================================================
-
-When local data changes:
-
-Update the visible screen immediately.
-
-Examples:
-
-Create order
-→ Orders can immediately show it.
-
-Void order
-→ status immediately becomes VOIDED.
-
-Dashboard
-→ local metrics update based on SQLite.
-
-Do not wait for cloud confirmation for local UI correctness.
-
-==================================================
-20. OFFLINE-FIRST PRODUCT BOOTSTRAP
-==================================================
-
-Products are cloud-managed.
-
-For a new device:
-
-D1
-→ Worker
-→ SQLite
-
-For normal app use:
-
-SQLite
-→ UI
-
-Only refresh products when synchronization says they have changed.
-
-Do not download all products repeatedly.
-
-==================================================
-21. CLOUD SYNC STATUS
-==================================================
-
-Do not redesign the UI for sync status.
-
-But expose a simple application-level state internally:
-
-IDLE
-SYNCING
-SUCCESS
-ERROR
-
-and:
-
-pendingCount
-
-This will be used later if a small status indicator is needed.
-
-==================================================
-22. REMOVE DIRECT UI NETWORK CALLS
-==================================================
+We need explicit evidence for:
 
-Search the frontend for direct calls to:
+- SQLite initialized = YES/NO
+- products table exists = YES/NO
+- initial local product count = number
+- pullCatalog() called = YES/NO
+- Worker request reached = YES/NO
+- Worker response status = number
+- Worker response product count = number
+- SQLite upsert executed = YES/NO
+- final SQLite product count = number
+- Billing query product count = number
 
-fetch('/api/')
-axios(...)
-apiClient(...)
-useQuery(...)
-mutationFn(...)
+DO NOT REMOVE THE DIAGNOSTICS UNTIL THE ROOT CAUSE IS IDENTIFIED.
 
-For each one determine:
-
-Can this data come from SQLite?
-
-If yes:
-→ replace with repository/service access.
-
-Do not remove API calls that are genuinely cloud-only.
-
-==================================================
-23. FRONTEND DATA CONTRACT
-==================================================
-
-Make sure repository return values map cleanly to the existing UI types.
-
-Do not alter UI data structures unnecessarily.
-
-If an adapter is necessary:
-
-SQLite model
-→ domain model
-→ existing UI model
-
-Keep conversions centralized.
-
-Do not duplicate mapping code across components.
-
-==================================================
-24. ERROR STATES
-==================================================
-
-Do not silently fall back to fake/demo data.
-
-If SQLite fails:
-show the existing appropriate application error state.
-
-If sync fails:
-local operation remains successful and data remains safe.
-
-Sync errors must not break Billing.
-
-==================================================
-25. PERFORMANCE
-==================================================
-
-Measure the new local-first behavior.
-
-Measure:
-
-1. Billing initial data availability
-2. Product search
-3. Add cart item
-4. Quantity change
-5. Checkout
-6. Orders open
-7. Dashboard open
-
-Important:
-
-Add/remove/update cart operations must create ZERO network requests.
-
-Checkout should create ZERO blocking network requests.
-
-Dashboard should not require D1 to display local analytics.
-
-==================================================
-26. WEB DEVELOPMENT ENVIRONMENT
-==================================================
-
-Do NOT create an IndexedDB browser implementation.
-
-Do NOT add `jeep-sqlite`.
-
-Do NOT fake native SQLite as a production mechanism.
-
-Keep the existing native Capacitor SQLite implementation.
-
-If a development/browser test cannot execute native SQLite, clearly report that limitation rather than changing the production architecture.
-
-==================================================
-27. TEST SUITE
-==================================================
-
-Create/update automated integration tests where practical.
-
-Test:
-
-- Billing reads local products
-- cart changes create no network requests
-- CASH checkout writes SQLite
-- UPI checkout writes SQLite
-- checkout creates sync queue
-- Orders reads SQLite
-- VOID writes SQLite + sync queue
-- Dashboard reads SQLite
-- VOIDED excluded from analytics
-- network unavailable does not break local operation
-- restored network triggers sync
-- duplicate sync remains idempotent
-
-==================================================
-28. FULL LOCALHOST TESTING
-==================================================
-
-Once integration is complete, the development environment should support:
-
-Frontend:
-http://localhost:5173
-
-Worker:
-http://localhost:8787
-
-Local D1:
-Wrangler local D1
-
-Normal cloud-backed development requests go through:
-
-localhost:5173
-→ localhost:8787
-→ local D1
-
-But normal POS data operations should use:
-
-localhost:5173
-→ local SQLite/repository
-
-where appropriate.
-
-==================================================
-29. TESTING PROCEDURE
 ==================================================
-
-After implementation, provide exact commands for:
-
-1. Start local Worker
-2. Start frontend
-3. Apply local D1 migrations
-4. Seed/bootstrap test products
-5. Open localhost
-6. Test online operation
-7. Disable network
-8. Test offline operation
-9. Re-enable network
-10. Verify synchronization
-11. Verify D1 contains exactly one copy of each order
-
-Do not require Android Studio for the web development workflow.
-
+PART 2 — VERIFY THE NATIVE API REQUEST
 ==================================================
-30. REGRESSION PROTECTION
-==================================================
 
-Run:
+Do not assume browser fetch behavior is identical to Android.
 
-- npm run test:sqlite
-- npm run test:sync
-- backend typecheck
-- frontend typecheck
-- frontend build
+Verify the ACTUAL Android runtime can request:
 
-Also test the existing UI manually.
+GET
+https://cafe-pos-api.pruthvigavhane.workers.dev/api/products
 
-Verify:
+Check for:
+- network failures
+- wrong base URL
+- malformed endpoint
+- JSON parsing issue
+- CORS/runtime issue
+- Capacitor/native HTTP issue
+- authentication issue
+- initialization timing issue
 
-Billing
-Dashboard
-Orders
-Settings
-navigation
-light mode
-dark mode
+The expected response must contain 51 products.
 
-have no visual regressions.
+If the Android request is failing, fix only that specific problem.
 
 ==================================================
-31. MONGODB
+PART 3 — MAKE FIRST-LAUNCH BOOTSTRAP RELIABLE
 ==================================================
-
-Do NOT delete MongoDB in this step.
 
-Do not use MongoDB for new operations.
+The first Android launch MUST guarantee that the local catalog is initialized.
 
-It remains temporarily only until final migration verification.
+Desired behavior:
 
+App starts
+↓
+SQLite initialized
+↓
+migrations complete
+↓
+check local products count
+↓
+if products are missing/empty:
+    perform pullCatalog()
+↓
+wait for pullCatalog() to COMPLETE
+↓
+verify local product count > 0
+↓
+load Billing
+
+Do NOT allow Billing to silently assume that products exist.
+
+The bootstrap must be idempotent.
+
+If products already exist:
+- do not duplicate them
+- update/upsert as appropriate
+
+If the cloud request temporarily fails:
+- do not crash the app
+- keep any existing local catalog
+- retry using the existing sync mechanism
+
+==================================================
+PART 4 — ADD A SAFE FIRST-LAUNCH FALLBACK
 ==================================================
-32. FINAL REPORT
-==================================================
-
-Report:
-
-1. Existing frontend data flow
-2. New SQLite-first data flow
-3. Files changed
-4. Hooks/services changed
-5. Direct network calls removed
-6. Local operations now supported
-7. Offline behavior
-8. Sync trigger behavior
-9. React Query changes
-10. Performance measurements
-11. Tests performed
-12. Pass/fail
-13. Any frontend compatibility issues
-14. Any remaining MongoDB references
 
 IMPORTANT:
-STOP AFTER STEP 5.
+
+If the investigation proves that a fresh install can have ZERO products while the first cloud pull is unavailable, implement a SAFE offline bootstrap fallback using the CURRENT 51 real TBT Cafe products already present in the project.
+
+The fallback must NOT replace D1 as the authoritative source.
+
+Use this model:
+
+FIRST LAUNCH:
+1. Initialize SQLite.
+2. Populate a bundled initial catalog snapshot ONLY if local products are empty.
+3. Immediately attempt cloud catalog synchronization.
+4. D1 remains authoritative for later updates.
+5. Upsert cloud products into SQLite.
+6. Never create duplicates.
+
+This ensures:
+- fresh install has a usable menu
+- app works even without immediate internet
+- D1 can update the local menu afterward
+
+DO NOT invent products.
+DO NOT change names/prices/categories.
+Use ONLY the existing 51 real TBT Cafe products.
+
+The fallback must be clearly marked in code as a bootstrap snapshot, not a second source of truth.
+
+==================================================
+PART 5 — REMOVE THE ADMIN LOGIN WINDOW
+==================================================
+
+The current Android app shows an unnecessary admin login such as:
+
+admin
+admin
+
+This is NOT required for the café owner pilot.
+
+Remove the admin login gate entirely.
+
+Desired startup:
+
+Open app
+↓
+Initialize SQLite/sync
+↓
+Billing screen
+
+No:
+- admin username
+- admin password
+- admin login form
+- "admin/admin"
+- developer login screen
+
+Do NOT remove useful Settings functionality.
+Do NOT remove the existing business screens.
+Do NOT add another authentication system.
+Do NOT redesign the UI.
+
+The app should simply open directly to the normal POS experience.
+
+==================================================
+PART 6 — VERIFY BILLING AFTER BOOTSTRAP
+==================================================
+
+After the fix, a fresh Android installation must show:
+
+- 51 products
+- real product names
+- real prices
+- real categories
+- category filtering
+- search
+- add to cart
+
+The FIRST TIME the app opens after a clean install, the product count must be demonstrably > 0.
+
+==================================================
+PART 7 — TEST A REAL DEVICE
+==================================================
+
+After the code fix:
+
+1. Build APK.
+2. Install on a clean Android installation.
+3. Clear app data / uninstall previous build first.
+4. Open app.
+5. Capture logcat if necessary.
+6. Verify the local SQLite product count.
+7. Verify Billing shows the 51 products.
+
+Do NOT declare success based only on:
+- TypeScript build
+- Gradle build
+- APK file size
+- source-code inspection
+
+SUCCESS REQUIRES REAL DEVICE PROOF.
+
+==================================================
+PART 8 — DO NOT TOUCH PRODUCTION DATA
+==================================================
 
 Do NOT:
-- redesign Dashboard
-- redesign Billing
-- add printer integration
-- delete MongoDB
-- make additional architectural changes
+- modify remote D1 schema
+- delete products
+- change product prices
+- create orders
+- seed test orders
+- deploy unrelated backend changes
 
-The goal is to connect the existing frontend to the already-tested local SQLite + sync architecture without changing its appearance.
+Remote D1 should remain:
+
+products = 51
+orders = 0
+order_items = 0
+
+==================================================
+PART 9 — REMOVE TEMPORARY DEBUGGING AFTER PROOF
+==================================================
+
+Once the real root cause is found and fixed:
+- remove temporary diagnostic logs if they are not useful in production
+- keep only safe operational error logging
+
+==================================================
+FINAL ACCEPTANCE CRITERIA
+
+Do NOT report "fixed" unless all are true:
+
+[ ] No admin/admin login screen
+[ ] Fresh Android install opens directly to POS
+[ ] Native SQLite initializes
+[ ] Products table exists
+[ ] Android can reach production Worker
+[ ] Worker returns 51 products
+[ ] Products are stored in local SQLite
+[ ] Local SQLite contains 51 products
+[ ] Billing reads from local SQLite
+[ ] Billing visibly shows the 51 products
+[ ] App still works if internet is unavailable after bootstrap
+[ ] Cloud sync remains functional
+[ ] No MongoDB
+[ ] No IndexedDB
+[ ] No jeep-sqlite
+
+FINAL REPORT MUST INCLUDE:
+
+1. Exact root cause of the previous empty Android menu
+2. Evidence from actual Android runtime/logcat
+3. Files changed
+4. Whether fallback catalog was needed
+5. Final local SQLite product count on device
+6. Confirmation that Billing displayed the products
+7. Confirmation that admin/admin login was removed
+8. APK exact path
+9. Any remaining warnings
+
+DO NOT declare success until the real Android device test proves the menu works.

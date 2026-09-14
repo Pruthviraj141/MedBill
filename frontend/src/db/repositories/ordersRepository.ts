@@ -3,6 +3,7 @@ import { Order, OrderItem } from '../types';
 import { syncQueueRepository } from './syncQueueRepository';
 import { Capacitor } from '@capacitor/core';
 import { webApiClient } from '../../lib/webApiClient';
+import { generateId } from '../../utils/generateId';
 
 // ----------------------------------------------------------------------
 // NATIVE IMPLEMENTATION
@@ -112,9 +113,10 @@ const webImpl = {
     const data = await webApiClient.get('/orders');
     return (data.orders || []).map((o: any) => ({
       ...o,
-      invoice_number: o.invoiceNumber,
-      payment_method: o.paymentMethod,
-      created_at: o.createdAt
+      total: o.grandTotal !== undefined ? o.grandTotal : o.total,
+      invoice_number: o.invoiceNumber || o.invoice_number,
+      payment_method: o.paymentMethod || o.payment_method,
+      created_at: o.createdAt || o.created_at
     }));
   },
 
@@ -125,13 +127,14 @@ const webImpl = {
 
     const order: Order = {
       ...orderData,
-      invoice_number: orderData.invoiceNumber,
-      payment_method: orderData.paymentMethod,
-      created_at: orderData.createdAt
+      total: orderData.grandTotal !== undefined ? orderData.grandTotal : orderData.total,
+      invoice_number: orderData.invoiceNumber || orderData.invoice_number,
+      payment_method: orderData.paymentMethod || orderData.payment_method,
+      created_at: orderData.createdAt || orderData.created_at
     };
 
     const items: OrderItem[] = (orderData.items || []).map((i: any) => ({
-       id: crypto.randomUUID(), // we can mock an ID for UI
+       id: generateId(), // we can mock an ID for UI
        order_id: id,
        product_id: i.productId,
        name_snapshot: i.name,

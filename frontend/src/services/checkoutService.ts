@@ -1,6 +1,7 @@
 import { productsRepository } from '../db/repositories/productsRepository';
 import { ordersRepository } from '../db/repositories/ordersRepository';
 import { Order, OrderItem, PaymentMethod } from '../db/types';
+import { generateId } from '../utils/generateId';
 
 export interface CartItemInput {
   productId: string;
@@ -17,7 +18,7 @@ export const checkoutService = {
       throw new Error("Invalid payment method");
     }
 
-    const orderId = crypto.randomUUID();
+    const orderId = generateId();
     const invoiceNumber = `INV-${new Date().toISOString().replace(/\\D/g, '').slice(0, 8)}-${Math.floor(1000 + Math.random() * 9000)}`;
     
     let subtotal = 0;
@@ -34,7 +35,7 @@ export const checkoutService = {
       subtotal += lineTotal;
       
       items.push({
-        id: crypto.randomUUID(),
+        id: generateId(),
         order_id: orderId,
         product_id: product.id,
         name_snapshot: product.name,

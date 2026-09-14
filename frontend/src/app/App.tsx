@@ -4,6 +4,9 @@ import logoSrc from '../assets/logo.png';
 import '../stores/themeStore'; // initialize theme on load
 import { initDB } from '../db/database';
 import { syncService } from '../services/syncService';
+import { productsRepository } from '../db/repositories/productsRepository';
+import { defaultCatalog } from '../db/defaultCatalog';
+import { Product } from '../db/types';
 
 const Dashboard = lazy(() => import('../features/dashboard/Dashboard').then((module) => ({ default: module.Dashboard })));
 const Billing = lazy(() => import('../features/billing/Billing').then((module) => ({ default: module.Billing })));
@@ -28,17 +31,27 @@ function NavItem({ active, icon, label, onClick }: { active: boolean; icon: Reac
 export function App() {
   const [view, setView] = useState('billing');
   const [isOffline, setIsOffline] = useState(false);
-  const [token, setToken] = useState(localStorage.getItem('auth_token'));
-  const [loginError, setLoginError] = useState('');
-  
   const [dbReady, setDbReady] = useState(false);
   const [dbError, setDbError] = useState('');
 
   useEffect(() => {
     // 1. Initialize DB safely
     initDB()
-      .then(() => {
+      .then(async () => {
+        // Fast-path Offline Bootstrap Check (Before UI Mount)
+        try {
+          const local = await productsRepository.getAllProducts();
+          if (local.length === 0) {
+            console.log('[BOOTSTRAP] Fast-path hydrating 51 products preventing UI pop-in.');
+            for (const p of defaultCatalog) await productsRepository.upsertProduct(p as unknown as Product);
+          }
+        } catch (e) {
+          // ignore fallback err in web environment
+        }
+
         setDbReady(true);
+        // Initial cloud bootstrap sync
+        syncService.pullCatalog().catch(console.error);
         // Start background synchronization daemon after DB is ready
         syncService.startBackgroundSync(15000);
       })
@@ -62,51 +75,12 @@ export function App() {
     window.addEventListener('online', on);
     window.addEventListener('offline', off);
     setIsOffline(!navigator.onLine);
-    const onAuthExpired = () => setToken(null);
-    window.addEventListener('auth-expired', onAuthExpired);
     return () => {
       window.removeEventListener('online', on);
       window.removeEventListener('offline', off);
-      window.removeEventListener('auth-expired', onAuthExpired);
       syncService.stopBackgroundSync();
     };
   }, [dbReady]);
-
-  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setLoginError('');
-    const form = new FormData(e.currentTarget);
-    const u = form.get('username');
-    const p = form.get('password');
-    if (u === 'admin' && p === 'admin') {
-      // Provide a mock token for local fallback
-      const token = 'offline-admin-token';
-      localStorage.setItem('auth_token', token);
-      setToken(token);
-    } else {
-      setLoginError('Invalid credentials. Use admin / admin');
-    }
-  };
-
-  if (!token) {
-    return (
-      <div className="app-shell" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <form onSubmit={handleLogin} className="panel" style={{ width: '90%', maxWidth: 360, padding: 30, display: 'flex', flexDirection: 'column', gap: 15 }}>
-          <div style={{ textAlign: 'center', marginBottom: 10 }}>
-            <img src={logoSrc} alt="TBT Cafe Logo" style={{ width: 52, height: 52, borderRadius: 14, margin: '0 auto 14px', display: 'block', objectFit: 'cover' }} />
-            <h1 style={{ fontSize: 22, margin: 0 }}>TBT CAFE</h1>
-            <p style={{ color: '#8e8a83', fontSize: 13, margin: '5px 0 0' }}>Sign in to continue</p>
-          </div>
-          <input name="username" placeholder="Username" className="search" style={{ paddingLeft: 14 }} autoFocus required />
-          <input name="password" type="password" placeholder="Password" className="search" style={{ paddingLeft: 14 }} required />
-          {loginError && <div style={{ color: '#c76d45', fontSize: 12, fontWeight: 600 }}>{loginError}</div>}
-          <button type="submit" className="primary-button" style={{ justifyContent: 'center', marginTop: 10 }}>
-            <LogIn size={18}/> Log In
-          </button>
-        </form>
-      </div>
-    );
-  }
 
   if (dbError) {
     return (
@@ -144,11 +118,11 @@ export function App() {
             {isOffline ? 'Offline' : 'Online'}
           </div>
           <button 
-            className="w-10 h-10 rounded-full bg-gradient-to-br from-[#3E2009] to-[#8E4A1C] text-white font-bold text-xs flex items-center justify-center shadow-md active:scale-95 transition-transform" 
-            onClick={() => { localStorage.removeItem('auth_token'); setToken(null); }}
-            aria-label="Profile"
+            className="w-10 h-10 rounded-full bg-gradient-to-br from-[#3E2009] to-[#8E4A1C] text-white font-bold text-lg flex items-center justify-center shadow-md active:scale-95 transition-transform" 
+            onClick={() => setView('settings')}
+            aria-label="Settings"
           >
-            PG
+            G
           </button>
         </div>
       </header>
