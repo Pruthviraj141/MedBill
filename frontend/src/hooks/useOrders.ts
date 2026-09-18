@@ -20,11 +20,11 @@ export function useOrders() {
           paymentMethod: o.payment_method,
           createdAt: o.created_at,
           items: (o.items || []).map((i: any) => ({
-            productId: i.product_id,
+            productId: i.product_id || i.productId,
             name: i.name_snapshot || i.name,
             quantity: i.quantity,
-            unitPrice: i.unit_price,
-            total: i.line_total,
+            unitPrice: i.unit_price ?? i.price ?? i.unitPrice ?? 0,
+            total: i.line_total ?? i.total ?? 0,
           }))
         }))
       };

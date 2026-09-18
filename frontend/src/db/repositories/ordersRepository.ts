@@ -94,17 +94,44 @@ const nativeImpl = {
   insertCloudOrderBase: async (order: Order, items: OrderItem[]) => {
     const db = await getDB();
     
+    // ------------------------------------------------------------------
+    // Conflict-resolution rules (execution rule 4):
+    //
+    // CASE 1 — Server order is new, not in local DB yet:
+    //   INSERT OR IGNORE creates it. The order is visible immediately.
+    //   No sync queue entry is created (it came from the server, not local).
+    //
+    // CASE 2 — Server order already exists locally AND is PENDING sync:
+    //   INSERT OR IGNORE is a no-op. The local pending copy is PRESERVED.
+    //   We do NOT overwrite it with the server copy because the local copy
+    //   may have already pushed to the server (and the server echoes it back
+    //   on the next pull). The push's markSynced call handles reconciliation.
+    //
+    // CASE 3 — Server order already exists locally AND is SYNCED:
+    //   INSERT OR IGNORE is a no-op for the order row.
+    //   If the server says it is now VOIDED, we run a conditional UPDATE
+    //   to propagate that status change — but ONLY if local status = 'COMPLETED'
+    //   and there is NO pending sync queue entry for this order.
+    //   This prevents us from overwriting a locally-initiated void that hasn't
+    //   been pushed yet.
+    // ------------------------------------------------------------------
+
+    // Step 1: INSERT OR IGNORE — safe for all cases.
     const orderStmt = {
       statement: `
-        INSERT OR REPLACE INTO orders (id, invoice_number, status, subtotal, total, payment_method, created_at, voided_at, void_reason)
+        INSERT OR IGNORE INTO orders (id, invoice_number, status, subtotal, total, payment_method, created_at, voided_at, void_reason)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
-      values: [order.id, order.invoice_number, order.status, order.subtotal, order.total, order.payment_method, order.created_at, order.voided_at || null, order.void_reason || null]
+      values: [
+        order.id, order.invoice_number, order.status, order.subtotal, order.total,
+        order.payment_method, order.created_at, order.voided_at || null, order.void_reason || null
+      ]
     };
 
+    // Step 2: Upsert items with INSERT OR IGNORE (items are immutable once created).
     const itemStmts = items.map(item => ({
       statement: `
-        INSERT OR REPLACE INTO order_items (id, order_id, product_id, name_snapshot, unit_price, quantity, line_total)
+        INSERT OR IGNORE INTO order_items (id, order_id, product_id, name_snapshot, unit_price, quantity, line_total)
         VALUES (?, ?, ?, ?, ?, ?, ?)
       `,
       values: [item.id, item.order_id, item.product_id, item.name_snapshot, item.unit_price, item.quantity, item.line_total]
@@ -114,6 +141,19 @@ const nativeImpl = {
     const res = await db.executeSet(set);
     if (res.changes && res.changes.changes && res.changes.changes < 0) {
       throw new Error('SQLite Sync Pull Transaction failed.');
+    }
+
+    // Step 3 — Conditional void propagation (Case 3 only).
+    // Only runs if: server says VOIDED AND local record is COMPLETED AND no pending queue entry.
+    if (order.status === 'VOIDED' && order.voided_at) {
+      await db.run(
+        `UPDATE orders
+         SET status = 'VOIDED', voided_at = ?, void_reason = ?
+         WHERE id = ?
+           AND status = 'COMPLETED'
+           AND id NOT IN (SELECT order_id FROM sync_queue WHERE status = 'PENDING')`,
+        [order.voided_at, order.void_reason || null, order.id]
+      );
     }
   }
 };

@@ -1,595 +1,772 @@
-STEP 3B — COMPLETE LOCAL SQLITE TERMINAL VERIFICATION
+You are working on my existing **TBT Cafe POS** project.
 
-DO NOT IMPLEMENT STEP 4.
-DO NOT IMPLEMENT SYNC.
-DO NOT MODIFY THE FRONTEND UI.
-DO NOT CONNECT THE UI TO SQLITE.
-DO NOT MODIFY D1.
-DO NOT DELETE MONGODB.
-DO NOT ADD INDEXEDDB.
+THIS IS A DEBUGGING + PRODUCTION FIX TASK.
 
-We have already implemented the LOCAL SQLITE data layer in STEP 3.
-
-Before building synchronization, I want to PROVE that the local data layer is correct.
+Do NOT redesign the architecture from your own assumptions.
+Do NOT create a new backend/database if one already exists.
+Do NOT replace working functionality unnecessarily.
+Do NOT assume how the project works.
+FIRST inspect the actual codebase, identify the current architecture and data flow, then make the required changes.
 
 ==================================================
-GOAL
-==================================================
+PROJECT CONTEXT
+===============
 
-Create a terminal-based automated verification suite that tests the LOCAL DATA LAYER end-to-end.
+The application has:
 
-The test must verify:
+* React + Vite frontend
+* Capacitor Android application
+* Hono backend
+* Cloudflare Workers
+* Cloudflare D1 database
+* Android offline-first functionality using local SQLite/storage
+* Web application that is already successfully communicating with the real production server/database
 
-Repository logic
-+
-Checkout logic
-+
-SQLite transactions
-+
-Queries
-+
-Analytics
-+
-Sync queue
-+
-Persistence
+There are two clients:
 
-The test must produce clear PASS/FAIL results.
+1. Android application
+2. Web/laptop application
 
-==================================================
-IMPORTANT ENVIRONMENT RULE
-==================================================
+THE MOST IMPORTANT REQUIREMENT:
 
-The production Android app MUST continue using:
+### BOTH CLIENTS MUST REPRESENT THE SAME REAL CAFE DATA.
 
-@capacitor-community/sqlite
+Android and Web must ultimately use the SAME production backend and SAME production D1 database.
 
-Do not replace it.
+There must NOT be:
 
-Because native Capacitor SQLite cannot be executed directly from a normal Node.js terminal process, create a TEST-ONLY SQLite execution environment if necessary.
+* separate databases accidentally used by Android
+* a development database accidentally used by Android
+* a local-only database being treated as the source of truth
+* different Worker URLs
+* different API base URLs
+* different authentication contexts
+* different database bindings
+* fake/mock/demo data
+* hardcoded dashboard data
+* an isolated Android backend
+* duplicated datasets
 
-The test implementation must exercise the SAME repository/service interfaces and SQL/business logic used by the production SQLite layer as closely as practical.
+Android may use SQLite/local storage ONLY as the offline cache / offline queue.
 
-Clearly distinguish:
-
-TEST SQLITE
-from
-PRODUCTION CAPACITOR SQLITE
-
-Do not introduce IndexedDB.
+The production cloud database is the source of truth whenever synchronization is possible.
 
 ==================================================
-1. CREATE ONE COMMAND
-==================================================
+CURRENT PROBLEM
+===============
 
-Create:
+The Web application is currently syncing/working correctly with the real server.
 
-npm run test:sqlite
+The Android application is NOT behaving correctly.
 
-It must run all local SQLite tests without requiring:
-- Android Studio
-- Android emulator
-- D1
-- internet
-- MongoDB
+I have created bills/orders/requests through Android while offline/online, and after some time the Android application is again showing ZERO / empty data.
 
-==================================================
-2. DATABASE INITIALIZATION
-==================================================
+This is unacceptable.
 
-Test:
+Previously created Android data appears to disappear from the Android UI.
 
-- database opens
-- schema initializes
-- migration version is correct
-- running initialization twice does not duplicate tables or data
-- all expected tables exist
+I need you to determine exactly WHY this is happening.
 
-Expected tables:
+Possible causes must NOT be guessed.
 
-products
-orders
-order_items
-settings
-sync_queue
-sync_state
+You must inspect and prove the real cause from the code.
 
-==================================================
-3. PRODUCTS TESTS
-==================================================
+Examples of things you MUST investigate:
 
-Test:
-
-1. insert product
-2. read product
-3. read all active products
-4. category filtering
-5. product lookup by ID
-6. inactive product behavior
-7. product update
-8. verify price is stored using the approved integer money representation
-
-Verify returned repository objects have the exact expected fields/types.
-
-==================================================
-4. ORDER CREATION TEST
-==================================================
-
-Create a real local order through the existing checkout service.
-
-Example:
-
-Product:
-Test Coffee
-Price:
-150
-
-Quantity:
-2
-
-Payment:
-CASH
-
-Expected:
-
-subtotal = 300
-total = 300
-
-Verify:
-
-- order exists
-- order ID exists
-- invoice number exists
-- status = COMPLETED
-- payment_method = CASH
-- subtotal = 300
-- total = 300
-- exactly one order exists
-- exactly one/two/etc correct order_items exist
-
-Do not bypass checkoutService by directly inserting the order for this test.
+* Android API base URL
+* Capacitor configuration
+* environment variables
+* production vs development API URL
+* Hono Worker URL
+* Cloudflare Worker bindings
+* D1 database binding
+* database name/environment
+* local SQLite initialization
+* SQLite schema
+* local migrations
+* local database reset/recreation
+* app startup logic
+* seed logic
+* sync logic
+* pull sync
+* push sync
+* sync queue
+* sync status
+* conflict resolution
+* API response handling
+* authentication/session handling
+* tenant/cafe ID
+* user ID
+* device ID
+* filtering
+* date filtering
+* status filtering
+* dashboard queries
+* order queries
+* product queries
+* transaction queries
+* deletion logic
+* logout/login behavior
+* app reinstall/reset behavior
+* Capacitor lifecycle hooks
+* background synchronization
+* failed network requests
+* retry handling
+* race conditions
+* stale local cache
+* incorrect clearing of local storage
+* wrong database/table names
+* incorrect API routes
+* production endpoint mismatches
+* CORS
+* HTTPS
+* Cloudflare Worker environment bindings
+* D1 migrations
+* schema mismatch between Android and server
+* timestamp/date conversion
+* timezone issues
+* integer/string ID mismatches
+* duplicate ID handling
+* UUID generation
+* server-generated IDs
+* client-generated IDs
+* sync acknowledgment logic
 
 ==================================================
-5. UPI TEST
-==================================================
+PHASE 1 — UNDERSTAND THE PROJECT FIRST
+======================================
 
-Create a second order using:
+Before modifying code, inspect the ENTIRE relevant architecture.
 
-payment_method = UPI
+Start by locating and reading:
 
-Verify:
+* frontend package.json
+* Android package/configuration
+* Capacitor configuration
+* all .env / .env.* files
+* Hono entry point
+* Hono route files
+* database access layer
+* D1 bindings
+* Cloudflare configuration
+* wrangler configuration
+* database schema
+* migrations
+* authentication implementation
+* API client implementation
+* Android native code related to networking/database
+* SQLite implementation
+* offline queue implementation
+* sync implementation
+* order/billing repositories
+* dashboard queries
+* product queries
+* all API endpoints used by Android
+* all API endpoints used by Web
 
-- UPI accepted
-- order persisted
-- total correct
-- status COMPLETED
+Search the codebase rather than assuming file names.
 
-==================================================
-6. INVALID PAYMENT TEST
-==================================================
+Trace the actual data lifecycle.
 
-Attempt:
+For an Android bill, document the exact current flow:
 
-CARD
-OTHER
+ANDROID UI
+→ local transaction
+→ SQLite/local store
+→ sync queue
+→ API client
+→ Hono endpoint
+→ Cloudflare Worker
+→ D1
+→ response
+→ local sync state
+→ UI refresh
 
-Both must fail.
+For a Web bill, document:
 
-No invalid order may be persisted.
+WEB UI
+→ API client
+→ Hono endpoint
+→ Cloudflare Worker
+→ D1
+→ response
+→ Web UI
 
-==================================================
-7. TAX / FEE TEST
-==================================================
-
-Search and validate the actual calculation path.
-
-For multiple quantities verify:
-
-total === subtotal
-
-Verify there is no:
-
-tax
-GST
-service charge
-convenience fee
-surcharge
-
-The test should fail if any extra amount is introduced.
-
-==================================================
-8. PRICE / SNAPSHOT TEST
-==================================================
-
-Create product:
-
-Coffee = ₹150
-
-Create order.
-
-Then update product:
-
-Coffee = ₹200
-
-Read the old order.
-
-Expected:
-
-old order item price remains ₹150.
-
-Historical snapshot must NOT change.
+DO NOT CONTINUE UNTIL YOU UNDERSTAND THESE TWO FLOWS.
 
 ==================================================
-9. TRANSACTION ROLLBACK TEST
-==================================================
-
-Force an order creation failure after transaction start.
-
-Verify:
-
-- order not persisted
-- order_items not persisted
-- sync_queue entry not persisted
-- no partial records remain
+PHASE 2 — PROVE THE DATABASE IS THE SAME
+========================================
 
 This is critical.
 
-==================================================
-10. SYNC QUEUE TEST
-==================================================
+Verify that Android's online requests and Web's online requests point to the SAME:
 
-After successful local checkout verify:
+* production Hono/Worker URL
+* Cloudflare Worker
+* environment
+* D1 database
+* D1 binding
+* database schema
+* tenant/cafe context
 
-exactly one sync_queue record exists for the order.
+Check the actual runtime values.
 
-Verify:
+Do not just inspect source files and assume.
 
-- entity ID is correct
-- operation is correct
-- payload is valid
-- queue survives database close/reopen
+Add temporary diagnostic logging where required.
 
-Do NOT sync it to D1.
+Create a clear verification such as:
 
-==================================================
-11. VOID TEST
-==================================================
+Android:
+API BASE URL = ______
+Worker = ______
+Environment = ______
+Authenticated user = ______
+Cafe/Tenant = ______
 
-Create completed order.
+Web:
+API BASE URL = ______
+Worker = ______
+Environment = ______
+Authenticated user = ______
+Cafe/Tenant = ______
 
-Void it using:
+Confirm that both are writing and reading from the SAME production D1.
 
-ordersRepository.voidOrder()
-
-Verify:
-
-status = VOIDED
-voided_at exists
-void_reason exists if supplied
-
-Verify original:
-- invoice number
-- total
-- payment method
-- items
-
-remain unchanged.
-
-Verify no physical delete occurs.
-
-Verify the void operation creates/updates the required sync_queue entry.
+If they are not, FIX THAT FIRST.
 
 ==================================================
-12. HISTORY TEST
+PHASE 3 — FIX OFFLINE-FIRST CORRECTLY
+=====================================
+
+The Android application MUST remain offline-first.
+
+Required behavior:
+
+### Scenario A — Android completely offline
+
+User creates:
+
+Bill #1001
+Bill #1002
+Bill #1003
+
+The app must:
+
+1. Save them locally immediately.
+2. Display them immediately.
+3. Keep them after app restart.
+4. Mark them as pending sync.
+5. NOT delete them merely because there is no internet.
+6. NOT replace them with an empty server response.
+7. NOT clear local data on startup.
+8. NOT treat failed sync as successful sync.
+
+Example local state:
+
+bill 1001 = pending
+bill 1002 = pending
+bill 1003 = pending
+
+### Scenario B — Internet comes back
+
+Android must:
+
+1. Detect connectivity.
+2. Read pending records.
+3. Send them to Hono.
+4. Hono validates and writes them to D1.
+5. Server returns success + canonical server ID.
+6. Android marks the local record as synced.
+7. The local record remains visible.
+8. Android can pull the authoritative server state.
+9. UI updates correctly.
+
+### Scenario C — Sync fails
+
+If one request fails:
+
+* DO NOT delete the local record.
+* DO NOT mark it as synced.
+* Keep it pending/failed.
+* Store useful error information.
+* Retry later.
+
 ==================================================
+PHASE 4 — SYNC MUST BE BIDIRECTIONAL
+====================================
 
-Create:
+Do not implement only:
 
-3 COMPLETED orders
-1 VOIDED order
+Android → Server.
 
-Query order history.
+We also need:
 
-Verify:
+Server → Android.
 
-- completed orders exist
-- voided order exists
-- voided order is not physically deleted
-- returned data matches expected structure
-
-==================================================
-13. DASHBOARD ANALYTICS TEST
-==================================================
-
-Create controlled local data.
+Android needs to be able to recover its state from the production server.
 
 For example:
 
-Order A:
-₹100 CASH
-COMPLETED
+Android local database accidentally becomes empty.
 
-Order B:
-₹200 UPI
-COMPLETED
+After authentication + sync:
 
-Order C:
-₹150 CASH
-VOIDED
+Android should be able to pull the current authoritative cloud data and reconstruct the local cache.
 
-Expected dashboard totals:
+Implement a reliable synchronization strategy.
 
-Revenue = ₹300
-Completed orders = 2
-Average bill = ₹150
+At minimum, establish:
 
-Payment mix:
+PUSH:
+Local pending changes → Hono → D1
 
-CASH = ₹100
-UPI = ₹200
+PULL:
+D1 authoritative changes → Hono → Android local database
 
-VOIDED ₹150 must contribute to NONE of the above.
+Use stable IDs.
 
-==================================================
-14. TOP PRODUCTS TEST
-==================================================
+Do NOT depend on array indexes.
 
-Create controlled orders with known quantities.
+Do NOT use temporary random IDs that can collide.
 
-Verify top products are ranked by actual completed quantities/revenue according to the implemented Dashboard rule.
-
-VOIDED order_items must not contribute.
+Design proper idempotency so that retrying the same bill does not create duplicates.
 
 ==================================================
-15. PEAK HOUR TEST
-==================================================
+PHASE 5 — PREVENT THE “SHOWING ZERO AGAIN” BUG
+==============================================
 
-Insert controlled completed orders at known timestamps.
+This is the most important bug currently.
 
-Verify the repository/report query identifies the correct peak hour.
+Find the exact code responsible for the Android screen returning to ZERO.
 
-VOIDED orders must not affect peak-hour calculations.
+Investigate:
 
-==================================================
-16. SALES ACTIVITY TEST
-==================================================
+* app startup
+* database initialization
+* database clearing
+* migrations
+* state initialization
+* API fetch
+* failed API fetch
+* empty API response
+* cache replacement
+* sync completion
+* logout
+* authentication refresh
+* date range
+* cafe ID
+* filtering
+* Zustand/Redux/context state if applicable
+* React Query/TanStack Query cache if applicable
+* SQLite query result handling
 
-Insert controlled orders at known times.
+IMPORTANT:
 
-Verify local hourly/daily sales buckets are correct.
+An empty server response must NOT automatically mean:
 
-No duplicate buckets.
+“Delete all local records.”
 
-VOIDED orders excluded.
+For example:
 
-==================================================
-17. PAYMENT MIX TEST
-==================================================
+If local SQLite contains:
 
-Verify the local analytics result contains ONLY:
+100 bills
 
-CASH
-UPI
+and the server request fails,
 
-No:
-CARD
-OTHER
+the app MUST NOT replace those 100 bills with:
 
-==================================================
-18. RECENT ORDERS TEST
-==================================================
+[]
 
-Create several orders with known timestamps.
+Instead:
 
-Verify:
+* retain local data
+* show cached/local data
+* indicate sync status
+* retry synchronization
 
-- correct ordering
-- newest first if that is the existing contract
-- expected number returned
-- VOIDED orders handled according to current Orders UI requirements
+Distinguish clearly between:
 
-==================================================
-19. SETTINGS TEST
-==================================================
+SUCCESS + ZERO RESULTS
 
-Test:
+and
 
-setSetting
-getSetting
-updateSetting
-removeSetting
+REQUEST FAILED / OFFLINE / AUTH FAILED / SYNC FAILED.
 
-Verify persistence.
-
-==================================================
-20. DATABASE RESTART TEST
-==================================================
-
-Perform:
-
-initialize
-→ write data
-→ close database
-→ reopen database
-→ read data
-
-Verify:
-
-products remain
-orders remain
-order_items remain
-settings remain
-sync_queue remains
-
-Nothing should depend on React memory.
+These are NOT the same state.
 
 ==================================================
-21. MULTIPLE ORDER TEST
-==================================================
+PHASE 6 — WEB MUST REMAIN WORKING
+=================================
 
-Create at least 20 controlled local orders.
+The Web application is already working with the real server.
 
-Verify:
+Do NOT break it.
 
-- no duplicate IDs
-- unique invoice numbers
-- correct totals
-- order items match their parent orders
-- analytics remain correct
+Any backend/database changes must be tested against both:
 
-Do not leave uncontrolled junk data behind.
+Android
+AND
+Web
 
-Use an isolated test database.
+When Android creates a bill online:
 
-==================================================
-22. FOREIGN KEY / DATA INTEGRITY TEST
-==================================================
+→ it must appear on Web.
 
-Verify order_items cannot become orphaned.
+When Web creates a bill:
 
-Verify each item belongs to a valid order.
+→ it must become available to Android after synchronization.
 
-If foreign-key enforcement is enabled by the implementation, explicitly verify it.
+When Android creates a bill offline:
 
-==================================================
-23. RETURN VALUE / TYPE TEST
-==================================================
+→ after synchronization it must appear in D1 and therefore on Web.
 
-For every repository operation verify the returned TypeScript object matches the expected interface.
-
-Specifically check:
-
-productsRepository
-ordersRepository
-dashboardRepository
-settingsRepository
-syncQueueRepository
-checkoutService
-
-Do not only verify "no exception happened".
-
-Verify actual values.
+This is the definition of success.
 
 ==================================================
-24. PERFORMANCE TEST
-==================================================
+PHASE 7 — DASHBOARD MUST BE FIXED
+=================================
 
-Measure local operations:
+The dashboard currently does NOT show correct operational data.
 
-- product read
-- order creation
-- order history
-- dashboard analytics
+Do not use mock values.
 
-Do NOT invent latency claims.
+Do not calculate dashboard numbers separately from the actual source data unless there is a clear reason.
 
-The purpose is only to confirm there is no unexpectedly expensive local operation.
+Dashboard must be driven from the SAME production data.
 
-==================================================
-25. CLEAN TEST ENVIRONMENT
-==================================================
+Audit every dashboard metric.
 
-All tests must run against an isolated TEST database.
+Examples:
 
-Do NOT touch:
-- production SQLite
-- production D1
-- MongoDB
-- real café data
+* Today's sales
+* Total orders
+* Revenue
+* Average order value
+* Pending orders
+* Completed orders
+* Cancelled orders
+* Top products
+* Sales activity
+* Peak hours
+* Daily/weekly/monthly trends
+* Payment method totals
+* Product quantities
+* Any KPI shown on the dashboard
 
-Clean the test DB after completion where appropriate.
+For every metric verify:
 
-==================================================
-26. COMMAND OUTPUT
-==================================================
+1. What database table is the source?
+2. What query is used?
+3. What date/time range is used?
+4. What timezone is used?
+5. What filters are applied?
+6. Does Android data appear?
+7. Does Web data appear?
+8. Are cancelled/refunded orders handled correctly?
+9. Are duplicates possible?
+10. Does the value match the raw database records?
 
-Make the command output easy to understand:
+Create a diagnostic/test dataset if necessary and manually verify calculations.
 
-========================================
-TBT CAFE — SQLITE TEST SUITE
-========================================
+Example:
 
-Database initialization        PASS
-Migrations                     PASS
-Products CRUD                 PASS
-CASH checkout                  PASS
-UPI checkout                   PASS
-Invalid payment rejection      PASS
-Subtotal / Total               PASS
-No tax / fee                  PASS
-Historical snapshot            PASS
-Transaction rollback           PASS
-Sync queue                     PASS
-VOIDED order                   PASS
-Order history                  PASS
-Dashboard analytics            PASS
-Top products                   PASS
-Peak hour                     PASS
-Sales activity                PASS
-Payment mix                   PASS
-Recent orders                 PASS
-Settings                       PASS
-Restart persistence            PASS
-Multiple orders               PASS
-Data integrity                PASS
-Return types                  PASS
+If D1 contains:
 
-========================================
-RESULT: ALL TESTS PASSED
-========================================
+Order 1 = ₹100
+Order 2 = ₹200
+Order 3 = ₹300
+
+dashboard TODAY'S SALES must show:
+
+₹600
+
+not:
+
+₹0
+₹300
+₹6000
+or some cached/mock number.
 
 ==================================================
-27. FAILURE DEBUGGING
+PHASE 8 — TIMESTAMPS / TIMEZONE
+===============================
+
+Café reports depend on date/time.
+
+Do not rely on inconsistent local date formatting.
+
+Use a consistent timestamp strategy.
+
+Store enough information to distinguish:
+
+client_created_at
+server_created_at
+updated_at
+synced_at
+
+Be careful with:
+
+India timezone
+IST / UTC
+day boundaries
+"today"
+"this week"
+"this month"
+
+A bill created at:
+
+23:59 IST
+
+must not incorrectly appear as the next day's sale because of a timezone conversion bug.
+
 ==================================================
+PHASE 9 — LOGGING / DEBUGGING
+=============================
 
-If a test fails:
+Add useful development diagnostics for synchronization.
 
-- show test name
-- expected result
-- actual result
-- exact error
-- relevant file/line
-- stop with non-zero exit code
+For every sync cycle, log enough information to identify:
 
-Do not swallow failures.
+SYNC START
+device ID
+user ID
+cafe/tenant ID
+pending record count
+API endpoint
+request ID
+records sent
+records accepted
+records rejected
+records skipped
+server response
+records marked synced
+records remaining pending
+SYNC END
+
+Do not log sensitive credentials or tokens.
+
+Add clear error handling.
+
+For example:
+
+SYNC FAILED
+reason: network unavailable
+pending records retained: 7
+retry scheduled: yes
 
 ==================================================
-28. FINAL VERIFICATION
+PHASE 10 — DATABASE CONSISTENCY
+===============================
+
+Review the D1 schema and Android SQLite schema side by side.
+
+They must have compatible representations for:
+
+* order IDs
+* bill IDs
+* product IDs
+* customer IDs if used
+* timestamps
+* numeric values
+* status
+* payment method
+* sync state
+* created_at
+* updated_at
+* deleted_at if soft-delete is used
+
+Identify and fix mismatches.
+
 ==================================================
+PHASE 11 — DO NOT DESTROY USER DATA
+===================================
 
-Run:
+This is extremely important.
 
-npm run test:sqlite
-npm run typecheck
-npm run build
+I have already created real billing data through Android.
 
-Do not modify UI.
+DO NOT:
 
-Do not implement D1 sync.
+* wipe SQLite
+* drop tables
+* recreate the database unnecessarily
+* reset D1
+* delete production records
+* run destructive migrations
+* replace real data with seed/demo data
 
-Do not implement browser storage.
+unless absolutely required and only when there is a safe migration path.
 
-Do not modify the backend.
+If existing local data currently exists, preserve it and migrate it.
+
+If records cannot be safely migrated automatically, stop and report exactly why rather than destroying them.
 
 ==================================================
-FINAL REPORT
+PHASE 12 — TEST MATRIX
+======================
+
+After implementing the fix, test all of these:
+
+TEST 1:
+Android online → create bill → verify D1 → verify Web
+
+TEST 2:
+Android offline → create bill → close app → reopen → verify bill remains
+
+TEST 3:
+Android offline → create 3 bills → reconnect → verify all 3 sync
+
+TEST 4:
+Android offline → create bill → internet returns → sync fails → verify bill remains pending
+
+TEST 5:
+Retry failed sync → verify only one server record exists
+
+TEST 6:
+Web creates bill → Android sync/pull → verify bill appears
+
+TEST 7:
+Android creates bill → Web refresh → verify bill appears
+
+TEST 8:
+Restart Android application → verify data remains
+
+TEST 9:
+Dashboard values match raw D1 data
+
+TEST 10:
+Today's date/reporting respects IST correctly
+
+TEST 11:
+Logout/login → verify authorized data remains available
+
+TEST 12:
+No network → dashboard should show cached/local information rather than falsely showing ZERO if local data exists
+
 ==================================================
+PHASE 13 — IMPLEMENTATION RULE
+==============================
 
-Return:
+Do not just give me suggestions.
 
-1. Test command
-2. Test database implementation
-3. Number of tests
-4. Pass/fail count
-5. Full failing tests if any
-6. Transaction verification result
-7. Persistence verification result
-8. Analytics verification result
-9. Sync queue verification result
-10. Typecheck result
-11. Build result
-12. What this proves
-13. What this does NOT prove without Android
-14. Whether STEP 4 is safe to begin
+Actually inspect and modify the existing project.
 
-STOP AFTER TESTING.
+Use the existing architecture where possible.
+
+Do not introduce unnecessary technologies.
+
+Do not replace Hono.
+
+Do not replace Cloudflare D1.
+
+Do not remove offline-first Android functionality.
+
+Do not convert Android into a purely online application.
+
+Do not create a second production backend.
+
+Do not create a second database.
+
+==================================================
+SUCCESS CRITERIA
+================
+
+The task is COMPLETE only when all of these are true:
+
+1. Android and Web use the SAME production Hono/Cloudflare backend.
+
+2. Both use the SAME production D1 database.
+
+3. Android can create bills offline.
+
+4. Offline bills survive app restarts.
+
+5. Offline bills synchronize to D1 when internet returns.
+
+6. Synced Android bills appear on Web.
+
+7. Web-created bills appear on Android after synchronization.
+
+8. Sync failures do not delete local data.
+
+9. Duplicate sync attempts do not create duplicate bills.
+
+10. Android no longer randomly returns to ZERO because of a failed/empty synchronization request.
+
+11. Dashboard values are based on real production data.
+
+12. Dashboard values match actual database records.
+
+13. Date/time calculations are correct for India/IST.
+
+14. Existing user data is preserved.
+
+15. The implementation is stable enough for real café usage.
+
+==================================================
+FINAL REPORT REQUIRED
+=====================
+
+After fixing everything, give me a concise engineering report containing:
+
+A. ROOT CAUSE
+Exactly why Android was showing zero / losing its data.
+
+B. WHAT WAS WRONG
+List the actual code/configuration problems discovered.
+
+C. WHAT YOU CHANGED
+List the files and important changes.
+
+D. DATA FLOW AFTER FIX
+Show:
+
+Android Offline
+→ SQLite
+→ Sync Queue
+→ Hono
+→ D1
+
+Android Online
+→ Hono
+→ D1
+
+Web
+→ Hono
+→ D1
+
+E. DATABASE CONSISTENCY
+Confirm whether Android and Web are using exactly the same production D1.
+
+F. SYNC BEHAVIOR
+Explain push + pull sync and retry behavior.
+
+G. DASHBOARD
+Explain the source and calculation for each important dashboard metric.
+
+H. TEST RESULTS
+Report the results of every test in the TEST MATRIX.
+
+I. REMAINING ISSUES
+Only mention issues that are actually proven to remain.
+
+MOST IMPORTANT INSTRUCTION:
+
+DO NOT TELL ME WHAT YOU "THINK" THE PROJECT IS DOING.
+
+INSPECT THE ACTUAL CODE FIRST.
+
+TRACE THE REAL DATA FLOW.
+
+IDENTIFY THE REAL ROOT CAUSE.
+
+THEN FIX IT.
+
+Do not make assumptions simply because the project is offline-first.
+
+The goal is not to create a theoretical architecture.
+
+The goal is to make THIS EXISTING TBT CAFE POS work correctly with REAL DATA on BOTH ANDROID AND WEB.

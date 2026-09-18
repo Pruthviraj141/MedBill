@@ -75,14 +75,15 @@ export const runDiagnostics = async () => {
     }
 
     // 13 & 14. Void rules
-    const today = new Date().toISOString().slice(0, 10);
-    const dashBefore = await dashboardRepository.getSalesSummary(today);
+    const todayStart = new Date(); todayStart.setUTCHours(0,0,0,0);
+    const todayEnd   = new Date(todayStart.getTime() + 86400000);
+    const dashBefore = await dashboardRepository.getSalesSummary(todayStart.toISOString(), todayEnd.toISOString());
     
     await ordersRepository.voidOrder(cashOrder.id, "Diag void");
     const voidedData = await ordersRepository.getOrderById(cashOrder.id);
     if (voidedData?.order.status !== "VOIDED") throw new Error("Order not marked VOIDED");
     
-    const dashAfter = await dashboardRepository.getSalesSummary(today);
+    const dashAfter = await dashboardRepository.getSalesSummary(todayStart.toISOString(), todayEnd.toISOString());
     if (dashAfter.revenue >= dashBefore.revenue) {
        throw new Error("Voided order not excluded from analytics");
     }

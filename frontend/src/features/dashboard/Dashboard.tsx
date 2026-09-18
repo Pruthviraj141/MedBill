@@ -3,6 +3,7 @@ import { BarChart3, Receipt, ShoppingBag, ChevronRight, Clock, CreditCard, Spark
 import { useDashboard } from '../../hooks/useDashboard';
 import { useOrders } from '../../hooks/useOrders';
 import { formatMoney, formatTime } from '../../utils/format';
+import { getDensePeakHours, getDenseWeekdays, getValidPaymentsData, getDonutGradient, getTopProducts } from '../../utils/dashboardUtils';
 
 const periods = ['today', 'week', 'month'] as const;
 
@@ -18,32 +19,17 @@ export function Dashboard({ onGo }: { onGo: (view: string) => void }) {
   const report = reportQuery.data;
   const orders = ordersQuery.data?.orders ?? [];
   
-  // Create dense arrays to cover 6AM - 11PM (18 hours) to match the screenshot matrix exactly
   const rawPeakHours = report?.peakHours ?? [];
-  const densePeakHours = Array.from({ length: 18 }, (_, k) => k + 6).map(hour => ({
-    hour, orders: rawPeakHours.find((p: any) => p.hour === hour)?.orders || 0
-  }));
+  const densePeakHours = getDensePeakHours(rawPeakHours);
 
-  // Create dense arrays for 7 days
-  const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   const rawWeekdays = report?.weekdayPattern ?? [];
-  const denseWeekdays = dayNames.map(day => ({
-    day, revenue: rawWeekdays.find((d: any) => d.day === day)?.revenue || 0
-  }));
+  const denseWeekdays = getDenseWeekdays(rawWeekdays);
   
-  // Explicitly remove any CARD data based on requirements.
   const allPayments = report?.paymentBreakdown ?? [];
-  const validPayments = allPayments.filter((p: any) => p.method === 'CASH' || p.method === 'UPI');
-  const validPaymentsTotal = validPayments.reduce((acc: number, cur: any) => acc + cur.amount, 0);
+  const { validPaymentsTotal, upiPct, cashPct } = getValidPaymentsData(allPayments);
 
   const topProducts = useMemo(() => {
-    const totals = new Map<string, { revenue: number, sold: number }>();
-    if (orders.length > 0 && period === 'today') {
-      orders.forEach((order: any) => order.items.forEach((item: any) => totals.set(item.name, { revenue: (totals.get(item.name)?.revenue ?? 0) + item.unitPrice * item.quantity, sold: (totals.get(item.name)?.sold ?? 0) + item.quantity })));
-      // Combine from report or map
-      return Array.from(totals.entries()).sort((a,b) => b[1].revenue - a[1].revenue).map(x => ({ name: x[0], ...x[1] })).slice(0, 5);
-    }
-    return (report?.topProducts ?? []).slice(0, 5);
+    return getTopProducts(orders, report?.topProducts ?? [], period);
   }, [orders, report?.topProducts, period]);
   
   const maxHourOrders = Math.max(...densePeakHours.map(h => h.orders), 1);
@@ -60,17 +46,7 @@ export function Dashboard({ onGo }: { onGo: (view: string) => void }) {
   const peakHourStr = peak ? `${peak.hour > 12 ? peak.hour-12 : (peak.hour===0?12:peak.hour)} ${peak.hour >= 12 ? 'PM' : 'AM'}` : '--';
 
   // Payment Mix Conic Gradient
-  let upiPct = 0, cashPct = 0;
-  if (validPaymentsTotal > 0) {
-    const upi = validPayments.find((p: any) => p.method === 'UPI')?.amount ?? 0;
-    const cash = validPayments.find((p: any) => p.method === 'CASH')?.amount ?? 0;
-    upiPct = Math.round((upi / validPaymentsTotal) * 100);
-    cashPct = Math.round((cash / validPaymentsTotal) * 100);
-  }
-  // Fallback styling if empty:
-  const donutGradient = validPaymentsTotal > 0 
-    ? `conic-gradient(from 0deg, #EAD6C0 0% ${upiPct}%, #8A5A33 ${upiPct}% ${upiPct + cashPct}%, transparent 100%)`
-    : `conic-gradient(#513217 0% 100%)`;
+  const donutGradient = getDonutGradient(validPaymentsTotal, upiPct, cashPct);
 
   return (
     <div className="flex flex-col w-full h-full pb-24 px-4 bg-[#F2F0ED] dark:bg-[#000000] animate-in fade-in slide-in-from-bottom-4 duration-500 overflow-y-auto no-scrollbar pt-2 font-sans tracking-tight" onClick={() => setActivePeakHour(null)}>
@@ -248,7 +224,7 @@ export function Dashboard({ onGo }: { onGo: (view: string) => void }) {
             <div className="flex flex-col gap-3 pointer-events-none">
                {topProducts.length === 0 ? (
                  <span className="text-[11px] text-muted-foreground text-center">No products</span>
-               ) : topProducts.map((prod: any, i: number) => (
+               ) : topProducts.slice(0, 5).map((prod: any, i: number) => (
                  <div key={i} className="flex items-center justify-between gap-1">
                    <div className="flex items-center gap-1.5 overflow-hidden">
                      <span className="text-[10px] font-black text-muted-foreground min-w-[12px]">{String(i+1).padStart(2, '0')}</span>
