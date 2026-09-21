@@ -1,595 +1,604 @@
-STEP 3B — COMPLETE LOCAL SQLITE TERMINAL VERIFICATION
+TBT CAFE POS — FULL PRINTER SYSTEM FORENSIC AUDIT
+DO NOT MODIFY ANYTHING
 
-DO NOT IMPLEMENT STEP 4.
-DO NOT IMPLEMENT SYNC.
-DO NOT MODIFY THE FRONTEND UI.
-DO NOT CONNECT THE UI TO SQLITE.
-DO NOT MODIFY D1.
-DO NOT DELETE MONGODB.
-DO NOT ADD INDEXEDDB.
+I do NOT want another implementation right now.
 
-We have already implemented the LOCAL SQLITE data layer in STEP 3.
+I want you to completely understand the CURRENT printer implementation
+already present in this repository, file-by-file and execution-path-by-
+execution-path, before any further changes are made.
 
-Before building synchronization, I want to PROVE that the local data layer is correct.
+The goal is to determine whether the CURRENT implementation is actually
+correct for:
 
-==================================================
-GOAL
-==================================================
+1. Desktop/Web → EZO Chota/Bada 58mm printer via USB
+2. Android APK → EZO Chota/Bada 58mm printer via Bluetooth + RawBT
 
-Create a terminal-based automated verification suite that tests the LOCAL DATA LAYER end-to-end.
+IMPORTANT:
+Do not claim that something is "fully working", "flawless", or "guaranteed"
+unless the repository evidence actually proves it.
 
-The test must verify:
+A physical EZO printer is NOT currently available, so you must clearly
+separate:
 
-Repository logic
-+
-Checkout logic
-+
-SQLite transactions
-+
-Queries
-+
-Analytics
-+
-Sync queue
-+
-Persistence
+A. Things that can be proven from code/tests
+B. Things that can be tested with the current virtual printer
+C. Things that REQUIRE the real EZO hardware
 
-The test must produce clear PASS/FAIL results.
+============================================================
+RULE 1 — ABSOLUTELY NO CODE CHANGES
+============================================================
 
-==================================================
-IMPORTANT ENVIRONMENT RULE
-==================================================
+This is a READ-ONLY forensic audit.
 
-The production Android app MUST continue using:
+Do NOT:
+- edit files
+- create files
+- delete files
+- rename files
+- install packages
+- upgrade packages
+- change package.json
+- change environment files
+- change backend
+- change APIs
+- change SQLite
+- change Android code
+- change frontend code
+- refactor anything
 
-@capacitor-community/sqlite
+Only inspect, trace, test, and report.
 
-Do not replace it.
+============================================================
+RULE 2 — INSPECT THE ENTIRE RELEVANT FILE SYSTEM
+============================================================
 
-Because native Capacitor SQLite cannot be executed directly from a normal Node.js terminal process, create a TEST-ONLY SQLite execution environment if necessary.
+First inspect the repository structure thoroughly.
 
-The test implementation must exercise the SAME repository/service interfaces and SQL/business logic used by the production SQLite layer as closely as practical.
+Identify and inspect every file relevant to printing, including but not
+limited to:
 
-Clearly distinguish:
+- frontend package.json
+- frontend source tree
+- existing printer service
+- PrinterService
+- DesktopPrinterAdapter
+- AndroidPrinterAdapter
+- ESC/POS implementation
+- receipt formatter
+- ReceiptDocument mapper
+- print queue/state implementation
+- print-agent source
+- usb-print-agent
+- Vite configuration
+- Capacitor configuration
+- Android project configuration
+- Android Manifest
+- Android intent handling
+- RawBT integration
+- CORS implementation
+- localhost proxy communication
+- QR asset loading
+- qr.jpg references
+- environment variables
+- npm scripts
+- concurrently/process orchestration
+- existing SQLite repositories
+- checkout service
+- order persistence
+- sync code
+- any printer-related tests
 
-TEST SQLITE
-from
-PRODUCTION CAPACITOR SQLITE
+Search the ENTIRE repository for:
 
-Do not introduce IndexedDB.
+printer
+print
+receipt
+escpos
+escpos.ts
+RawBT
+rawbt:
+Bluetooth
+USB
+28080
+print-agent
+usb-print-agent
+qr.jpg
+ReceiptDocument
+PrinterService
+DesktopPrinterAdapter
+AndroidPrinterAdapter
+printJobId
+print queue
+window.print
+lp
+CUPS
+isNativePlatform
+Capacitor.isNativePlatform
 
-==================================================
-1. CREATE ONE COMMAND
-==================================================
+Do not assume a file is irrelevant merely because its name does not
+contain "printer". Follow imports and execution paths.
 
-Create:
+============================================================
+RULE 3 — TRACE THE DESKTOP FLOW LINE BY LINE
+============================================================
 
-npm run test:sqlite
+Trace the COMPLETE desktop flow from button click to printer transport.
 
-It must run all local SQLite tests without requiring:
-- Android Studio
-- Android emulator
-- D1
-- internet
-- MongoDB
+I want the exact execution chain:
 
-==================================================
-2. DATABASE INITIALIZATION
-==================================================
+User clicks Print
+  ↓
+Which React component/function?
+  ↓
+Which service?
+  ↓
+Which data is supplied?
+  ↓
+Which ReceiptDocument mapper?
+  ↓
+Which receipt formatter?
+  ↓
+Which ESC/POS encoder?
+  ↓
+Which HTTP request?
+  ↓
+Which localhost endpoint?
+  ↓
+Which print-agent route?
+  ↓
+Which parser?
+  ↓
+Which virtual/USB branch?
+  ↓
+Which OS command?
+  ↓
+Which CUPS/USB destination?
 
-Test:
+For every transition, identify the EXACT file and function.
 
-- database opens
-- schema initializes
-- migration version is correct
-- running initialization twice does not duplicate tables or data
-- all expected tables exist
+Verify that the desktop browser NEVER attempts to use the Android RawBT
+transport.
 
-Expected tables:
+Verify that the desktop production/USB branch actually reaches the
+physical USB transport.
 
-products
-orders
-order_items
-settings
-sync_queue
-sync_state
+Verify that virtual mode actually bypasses physical printing.
 
-==================================================
-3. PRODUCTS TESTS
-==================================================
+Verify whether the current CUPS command requires a configured printer,
+and exactly how a printer is selected.
 
-Test:
+============================================================
+RULE 4 — TRACE THE ANDROID FLOW LINE BY LINE
+============================================================
 
-1. insert product
-2. read product
-3. read all active products
-4. category filtering
-5. product lookup by ID
-6. inactive product behavior
-7. product update
-8. verify price is stored using the approved integer money representation
+Trace the COMPLETE Android flow independently.
 
-Verify returned repository objects have the exact expected fields/types.
+I want:
 
-==================================================
-4. ORDER CREATION TEST
-==================================================
+User clicks Print
+  ↓
+checkout/print function
+  ↓
+platform detection
+  ↓
+Capacitor/native detection
+  ↓
+AndroidPrinterAdapter
+  ↓
+receipt generation
+  ↓
+ESC/POS encoding
+  ↓
+Base64 conversion
+  ↓
+RawBT URI/Intent
+  ↓
+Android intent handling
+  ↓
+RawBT package
+  ↓
+Bluetooth printer
 
-Create a real local order through the existing checkout service.
+Verify that Android APK execution does NOT accidentally call:
 
-Example:
+127.0.0.1:28080
+Desktop print agent
+CUPS
+lp
+Windows/Linux USB printing
 
-Product:
-Test Coffee
-Price:
-150
+Verify exactly how the Android code detects native Android.
 
-Quantity:
-2
+Do not assume that a condition such as Capacitor.isNativePlatform()
+automatically proves Android-only behavior. Inspect the surrounding
+conditions and platform checks.
 
-Payment:
-CASH
+============================================================
+RULE 5 — VERIFY THE RAWBT IMPLEMENTATION
+============================================================
 
-Expected:
+Inspect the actual Android implementation.
 
-subtotal = 300
-total = 300
+Confirm:
+
+- exact URI format
+- exact Base64 construction
+- exact intent mechanism
+- exact RawBT package/URI handling
+- whether the implementation uses raw ESC/POS bytes
+- whether the existing code sends HTML instead
+- whether Capacitor allows the required intent
+- what happens if RawBT is missing
+- what happens if intent launch fails
+- what happens if the printer is unavailable
+
+Compare the implementation with the documented RawBT intent flow.
+
+Do not change anything.
+
+Report mismatches explicitly.
+
+============================================================
+RULE 6 — VERIFY THE ESC/POS GENERATOR
+============================================================
+
+Inspect ESCPOS.ts and every function that contributes to the print buffer.
+
+Build an exact inventory of every ESC/POS command currently emitted.
+
+For example, verify actual use of:
+
+ESC @
+ESC a
+ESC E
+GS !
+LF
+ESC d
+image/raster commands
+cut/feed commands
+etc.
+
+Do not assume the command set.
+
+For every command, identify:
+
+- exact bytes
+- purpose
+- source function
+- where it is used
+- whether virtual parser supports it
+- whether desktop USB path preserves it
+- whether Android path preserves it
+
+Also inspect binary encoding and byte ordering.
+
+============================================================
+RULE 7 — VERIFY THE 58MM RECEIPT MODEL
+============================================================
+
+Inspect the actual receipt formatter.
 
 Verify:
 
-- order exists
-- order ID exists
-- invoice number exists
-- status = COMPLETED
-- payment_method = CASH
-- subtotal = 300
-- total = 300
-- exactly one order exists
-- exactly one/two/etc correct order_items exist
+- paper width assumptions
+- printable columns
+- line lengths
+- item wrapping
+- quantity alignment
+- amount alignment
+- totals
+- GST
+- discounts
+- payment method
+- feed
+- cut
+- empty values
+- long product names
+- large totals
+- multiple items
 
-Do not bypass checkoutService by directly inserting the order for this test.
+Do not assume "32 characters" is universally correct.
 
-==================================================
-5. UPI TEST
-==================================================
+Report the actual configured values and where they come from.
 
-Create a second order using:
+============================================================
+RULE 8 — VERIFY QR.JPEG/QR.JPG END TO END
+============================================================
 
-payment_method = UPI
+Locate the EXISTING qr.jpg using the real filesystem.
+
+Report the exact path.
+
+Trace:
+
+qr.jpg
+ ↓
+asset loading
+ ↓
+image decoding
+ ↓
+resize
+ ↓
+monochrome conversion
+ ↓
+bitmap packing
+ ↓
+ESC/POS image command
+ ↓
+virtual renderer / real transport
+
+Verify that the SAME existing qr.jpg is used.
+
+Verify that no QR is being generated dynamically in place of it.
+
+Verify the dimensions and final bitmap dimensions.
+
+Verify the QR is centered and has sufficient quiet-zone space.
+
+If physical scanability cannot be proven without hardware, explicitly say:
+
+"Physical scanability requires hardware testing."
+
+Do not claim otherwise.
+
+============================================================
+RULE 9 — VERIFY WEB/PC LOCAL AGENT
+============================================================
+
+Inspect the entire local print-agent implementation.
+
+Confirm:
+
+- exact host
+- exact port
+- /health
+- /print
+- /preview
+- OPTIONS handling
+- CORS
+- request validation
+- error handling
+- virtual mode
+- USB mode
+- CUPS mode
+- shutdown behavior
+
+Confirm whether it binds to:
+
+127.0.0.1
+
+and whether it can accidentally bind to:
+
+0.0.0.0
+
+Confirm whether the agent can be reached by another device on the LAN.
+
+Confirm whether the browser uses the correct localhost address.
+
+Explain exactly what happens when the agent is not running.
+
+============================================================
+RULE 10 — VERIFY NPM DEV ORCHESTRATION
+============================================================
+
+Inspect the actual package.json.
+
+Verify exactly what happens when:
+
+npm run dev
+
+is executed.
+
+Confirm:
+
+- Vite starts
+- print agent starts
+- both processes remain alive
+- Ctrl+C terminates both
+- there is no hidden second manual command
+- virtual printer mode starts correctly
+- environment-variable syntax is cross-platform or not
+
+Do not modify package.json.
+
+Report Linux/macOS behavior separately from Windows behavior if
+different.
+
+============================================================
+RULE 11 — VERIFY OFFLINE-FIRST ORDER SAFETY
+============================================================
+
+Trace the checkout flow.
+
+Prove the exact ordering:
+
+SQLite/local order transaction
+  ↓
+successful local commit
+  ↓
+print trigger
+  ↓
+cloud sync independently
+
+Verify that printing does NOT block successful order persistence.
+
+Verify that cloud synchronization is NOT required for printing.
+
+Verify that printer failure does NOT:
+- rollback order
+- delete order
+- duplicate order
+- duplicate payment
+- alter totals
+
+============================================================
+RULE 12 — VERIFY PRINT JOB IDEMPOTENCY
+============================================================
+
+Inspect the actual implementation.
+
+Determine whether print-job state is:
+
+- memory only
+- persistent
+- SQLite-backed
+- localStorage
+- another mechanism
 
 Verify:
 
-- UPI accepted
-- order persisted
-- total correct
-- status COMPLETED
+- printJobId generation
+- order.id association
+- retry behavior
+- app restart behavior
+- double-click behavior
+- duplicate submission behavior
 
-==================================================
-6. INVALID PAYMENT TEST
-==================================================
+Do not assume that an in-memory lock provides restart-safe idempotency.
 
-Attempt:
+Report exactly what is and is not protected.
 
-CARD
-OTHER
+============================================================
+RULE 13 — VERIFY VIRTUAL PRINTER
+============================================================
 
-Both must fail.
+Inspect the virtual ESC/POS renderer line by line.
 
-No invalid order may be persisted.
+Determine:
 
-==================================================
-7. TAX / FEE TEST
-==================================================
+- which ESC/POS commands it actually parses
+- which are unsupported
+- whether unsupported commands are ignored
+- whether QR/image data is actually rendered
+- whether text alignment is correct
+- whether bold/size commands are correct
+- whether feed commands are correct
+- whether the preview truly represents the generated ESC/POS bytes
 
-Search and validate the actual calculation path.
+Verify that the virtual renderer consumes the SAME binary buffer used by
+the eventual physical printer path.
 
-For multiple quantities verify:
+Do not call the virtual renderer an "exact EZO emulator" unless the code
+actually proves that.
 
-total === subtotal
-
-Verify there is no:
-
-tax
-GST
-service charge
-convenience fee
-surcharge
-
-The test should fail if any extra amount is introduced.
-
-==================================================
-8. PRICE / SNAPSHOT TEST
-==================================================
-
-Create product:
-
-Coffee = ₹150
-
-Create order.
-
-Then update product:
-
-Coffee = ₹200
-
-Read the old order.
-
-Expected:
-
-old order item price remains ₹150.
-
-Historical snapshot must NOT change.
-
-==================================================
-9. TRANSACTION ROLLBACK TEST
-==================================================
-
-Force an order creation failure after transaction start.
-
-Verify:
-
-- order not persisted
-- order_items not persisted
-- sync_queue entry not persisted
-- no partial records remain
+============================================================
+RULE 14 — VERIFY REAL EZO COMPATIBILITY
+============================================================
 
 This is critical.
 
-==================================================
-10. SYNC QUEUE TEST
-==================================================
+We are targeting the EZO Chota/Bada 58mm thermal machine.
 
-After successful local checkout verify:
+Use the repository evidence plus known documented integration behavior,
+but do NOT claim hardware compatibility that cannot be proven without
+the physical unit.
 
-exactly one sync_queue record exists for the order.
+Determine:
 
-Verify:
+1. Is the implementation producing standard ESC/POS?
+2. Is the image command compatible with likely EZO/58mm behavior?
+3. Is the text encoding configurable?
+4. Is ₹ supported/tested?
+5. Is Bluetooth transport handled through RawBT?
+6. Is USB transport handled through CUPS/raw output?
+7. Are there any hardware-specific assumptions?
+8. Which points require physical EZO verification?
 
-- entity ID is correct
-- operation is correct
-- payload is valid
-- queue survives database close/reopen
+Clearly separate:
 
-Do NOT sync it to D1.
+PROVEN
+LIKELY
+REQUIRES HARDWARE TEST
 
-==================================================
-11. VOID TEST
-==================================================
+============================================================
+RULE 15 — SECURITY REVIEW
+============================================================
 
-Create completed order.
-
-Void it using:
-
-ordersRepository.voidOrder()
-
-Verify:
-
-status = VOIDED
-voided_at exists
-void_reason exists if supplied
-
-Verify original:
-- invoice number
-- total
-- payment method
-- items
-
-remain unchanged.
-
-Verify no physical delete occurs.
-
-Verify the void operation creates/updates the required sync_queue entry.
-
-==================================================
-12. HISTORY TEST
-==================================================
-
-Create:
-
-3 COMPLETED orders
-1 VOIDED order
-
-Query order history.
+Inspect security around the local print agent.
 
 Verify:
 
-- completed orders exist
-- voided order exists
-- voided order is not physically deleted
-- returned data matches expected structure
+- binding
+- CORS
+- origin handling
+- request validation
+- localhost exposure
+- authentication if any
+- oversized request handling
 
-==================================================
-13. DASHBOARD ANALYTICS TEST
-==================================================
+Do not change anything.
 
-Create controlled local data.
+Point out anything that could allow another local/LAN application to
+trigger printing.
 
-For example:
+============================================================
+RULE 16 — BUILD AND TEST REVIEW
+============================================================
 
-Order A:
-₹100 CASH
-COMPLETED
-
-Order B:
-₹200 UPI
-COMPLETED
-
-Order C:
-₹150 CASH
-VOIDED
-
-Expected dashboard totals:
-
-Revenue = ₹300
-Completed orders = 2
-Average bill = ₹150
-
-Payment mix:
-
-CASH = ₹100
-UPI = ₹200
-
-VOIDED ₹150 must contribute to NONE of the above.
-
-==================================================
-14. TOP PRODUCTS TEST
-==================================================
-
-Create controlled orders with known quantities.
-
-Verify top products are ranked by actual completed quantities/revenue according to the implemented Dashboard rule.
-
-VOIDED order_items must not contribute.
-
-==================================================
-15. PEAK HOUR TEST
-==================================================
-
-Insert controlled completed orders at known timestamps.
-
-Verify the repository/report query identifies the correct peak hour.
-
-VOIDED orders must not affect peak-hour calculations.
-
-==================================================
-16. SALES ACTIVITY TEST
-==================================================
-
-Insert controlled orders at known times.
-
-Verify local hourly/daily sales buckets are correct.
-
-No duplicate buckets.
-
-VOIDED orders excluded.
-
-==================================================
-17. PAYMENT MIX TEST
-==================================================
-
-Verify the local analytics result contains ONLY:
-
-CASH
-UPI
-
-No:
-CARD
-OTHER
-
-==================================================
-18. RECENT ORDERS TEST
-==================================================
-
-Create several orders with known timestamps.
+Run/read existing tests and build configuration where safe, but do not
+modify anything.
 
 Verify:
 
-- correct ordering
-- newest first if that is the existing contract
-- expected number returned
-- VOIDED orders handled according to current Orders UI requirements
+- frontend TypeScript
+- frontend build
+- Android build configuration
+- printer agent startup
+- /health
+- /preview
+- virtual print path
 
-==================================================
-19. SETTINGS TEST
-==================================================
+Do not install dependencies or alter configuration just to make tests
+pass.
 
-Test:
+============================================================
+FINAL REPORT FORMAT
+============================================================
 
-setSetting
-getSetting
-updateSetting
-removeSetting
+Return a detailed forensic report with these sections:
 
-Verify persistence.
+1. CURRENT ARCHITECTURE
+2. EXACT DESKTOP EXECUTION FLOW
+3. EXACT ANDROID EXECUTION FLOW
+4. FILE-BY-FILE PRINTER MAP
+5. ESC/POS COMMAND INVENTORY
+6. 58MM RECEIPT ANALYSIS
+7. qr.jpg EXACT PATH + PIPELINE
+8. DESKTOP USB/CUPS ANALYSIS
+9. ANDROID RAWBT ANALYSIS
+10. VIRTUAL PRINTER ANALYSIS
+11. OFFLINE/SQLITE SAFETY ANALYSIS
+12. PRINT JOB IDEMPOTENCY ANALYSIS
+13. SECURITY ANALYSIS
+14. BUILD/TEST RESULTS
+15. PROVEN TO WORK FROM CODE
+16. PROVEN TO WORK IN VIRTUAL TESTING
+17. REQUIRES PHYSICAL EZO TESTING
+18. RISKS / BUGS / CONTRADICTIONS FOUND
+19. EXACT MINIMUM CHANGES NEEDED, IF ANY
 
-==================================================
-20. DATABASE RESTART TEST
-==================================================
+For every detected problem, identify:
 
-Perform:
+- exact file
+- exact function
+- exact issue
+- why it is an issue
+- severity
+- safest minimal fix
 
-initialize
-→ write data
-→ close database
-→ reopen database
-→ read data
+DO NOT FIX ANYTHING YET.
 
-Verify:
+FINAL RULE:
 
-products remain
-orders remain
-order_items remain
-settings remain
-sync_queue remains
+Do not tell me "it works perfectly" simply because the code looks correct.
 
-Nothing should depend on React memory.
+I want evidence.
 
-==================================================
-21. MULTIPLE ORDER TEST
-==================================================
+I want you to understand the entire current implementation first.
 
-Create at least 20 controlled local orders.
+No code modifications.
+No refactoring.
+No new dependencies.
+No "improvements".
 
-Verify:
-
-- no duplicate IDs
-- unique invoice numbers
-- correct totals
-- order items match their parent orders
-- analytics remain correct
-
-Do not leave uncontrolled junk data behind.
-
-Use an isolated test database.
-
-==================================================
-22. FOREIGN KEY / DATA INTEGRITY TEST
-==================================================
-
-Verify order_items cannot become orphaned.
-
-Verify each item belongs to a valid order.
-
-If foreign-key enforcement is enabled by the implementation, explicitly verify it.
-
-==================================================
-23. RETURN VALUE / TYPE TEST
-==================================================
-
-For every repository operation verify the returned TypeScript object matches the expected interface.
-
-Specifically check:
-
-productsRepository
-ordersRepository
-dashboardRepository
-settingsRepository
-syncQueueRepository
-checkoutService
-
-Do not only verify "no exception happened".
-
-Verify actual values.
-
-==================================================
-24. PERFORMANCE TEST
-==================================================
-
-Measure local operations:
-
-- product read
-- order creation
-- order history
-- dashboard analytics
-
-Do NOT invent latency claims.
-
-The purpose is only to confirm there is no unexpectedly expensive local operation.
-
-==================================================
-25. CLEAN TEST ENVIRONMENT
-==================================================
-
-All tests must run against an isolated TEST database.
-
-Do NOT touch:
-- production SQLite
-- production D1
-- MongoDB
-- real café data
-
-Clean the test DB after completion where appropriate.
-
-==================================================
-26. COMMAND OUTPUT
-==================================================
-
-Make the command output easy to understand:
-
-========================================
-TBT CAFE — SQLITE TEST SUITE
-========================================
-
-Database initialization        PASS
-Migrations                     PASS
-Products CRUD                 PASS
-CASH checkout                  PASS
-UPI checkout                   PASS
-Invalid payment rejection      PASS
-Subtotal / Total               PASS
-No tax / fee                  PASS
-Historical snapshot            PASS
-Transaction rollback           PASS
-Sync queue                     PASS
-VOIDED order                   PASS
-Order history                  PASS
-Dashboard analytics            PASS
-Top products                   PASS
-Peak hour                     PASS
-Sales activity                PASS
-Payment mix                   PASS
-Recent orders                 PASS
-Settings                       PASS
-Restart persistence            PASS
-Multiple orders               PASS
-Data integrity                PASS
-Return types                  PASS
-
-========================================
-RESULT: ALL TESTS PASSED
-========================================
-
-==================================================
-27. FAILURE DEBUGGING
-==================================================
-
-If a test fails:
-
-- show test name
-- expected result
-- actual result
-- exact error
-- relevant file/line
-- stop with non-zero exit code
-
-Do not swallow failures.
-
-==================================================
-28. FINAL VERIFICATION
-==================================================
-
-Run:
-
-npm run test:sqlite
-npm run typecheck
-npm run build
-
-Do not modify UI.
-
-Do not implement D1 sync.
-
-Do not implement browser storage.
-
-Do not modify the backend.
-
-==================================================
-FINAL REPORT
-==================================================
-
-Return:
-
-1. Test command
-2. Test database implementation
-3. Number of tests
-4. Pass/fail count
-5. Full failing tests if any
-6. Transaction verification result
-7. Persistence verification result
-8. Analytics verification result
-9. Sync queue verification result
-10. Typecheck result
-11. Build result
-12. What this proves
-13. What this does NOT prove without Android
-14. Whether STEP 4 is safe to begin
-
-STOP AFTER TESTING.
+AUDIT ONLY.

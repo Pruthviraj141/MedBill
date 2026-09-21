@@ -30,13 +30,17 @@ syncRouter.post('/orders', async (c) => {
     
     if (Array.isArray(items)) {
       for (const item of items) {
+        const itemQty = Number(item.quantity) || 1;
+        const itemPrice = Number(item.unit_price ?? item.unitPrice ?? item.price ?? 0);
+        const itemTotal = Number(item.line_total ?? item.lineTotal ?? item.total ?? 0) || (itemPrice * itemQty);
+
         statements.push(
           c.env.DB.prepare(
             `INSERT OR IGNORE INTO order_items 
              (id, order_id, product_id, name_snapshot, unit_price, quantity, line_total) 
              VALUES (?, ?, ?, ?, ?, ?, ?)`
           ).bind(
-            item.id, item.order_id, item.product_id, item.name_snapshot, item.unit_price, item.quantity, item.line_total
+            item.id, item.order_id, item.product_id || item.productId, item.name_snapshot || item.name, itemPrice, itemQty, itemTotal
           )
         );
       }
@@ -76,6 +80,32 @@ syncRouter.post('/voids', async (c) => {
   }
 
   return c.json({ success: true, processed: processedIds });
+});
+
+syncRouter.get('/orders', async (c) => {
+  const lastSync = c.req.query('last_sync') || '1970-01-01T00:00:00.000Z';
+  
+  const { results: orders } = await c.env.DB.prepare(
+    `SELECT * FROM orders WHERE created_at > ? OR (voided_at IS NOT NULL AND voided_at > ?) ORDER BY created_at ASC LIMIT 200`
+  ).bind(lastSync, lastSync).all();
+
+  if (!orders || orders.length === 0) return c.json({ orders: [] });
+
+  // Safe JOIN: fetch matching items in one query without string interpolation.
+  const { results: items } = await c.env.DB.prepare(
+    `SELECT oi.* FROM order_items oi
+     INNER JOIN orders o ON o.id = oi.order_id
+     WHERE o.created_at > ? OR (o.voided_at IS NOT NULL AND o.voided_at > ?)`
+  ).bind(lastSync, lastSync).all();
+
+  const formattedOrders = orders.map(o => {
+    return {
+      order: o,
+      items: items.filter((i: any) => i.order_id === o.id)
+    };
+  });
+
+  return c.json({ orders: formattedOrders });
 });
 
 syncRouter.get('/products', async (c) => {

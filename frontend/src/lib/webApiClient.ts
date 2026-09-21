@@ -1,6 +1,9 @@
-// Helper for Browser Development Data Mode
 export const getApiBaseUrl = () => {
-    return import.meta.env?.VITE_API_BASE_URL || 'http://localhost:8787/api';
+    const url = import.meta.env?.VITE_API_BASE_URL;
+    if (!url) {
+        throw new Error("VITE_API_BASE_URL is missing. Please configure it explicitly.");
+    }
+    return url;
 };
 
 export const webApiClient = {

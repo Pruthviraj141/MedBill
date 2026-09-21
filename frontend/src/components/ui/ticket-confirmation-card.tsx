@@ -1,7 +1,7 @@
 import * as React from "react";
 import { cn } from "../../lib/utils";
 import QRCode from "react-qr-code";
-import html2canvas from "html2canvas";
+import * as htmlToImage from "html-to-image";
 import jsPDF from "jspdf";
 import type { Order } from "../../types";
 import { formatMoney } from "../../utils/format";
@@ -214,20 +214,26 @@ const AnimatedTicket = ({
         setDownloading(true);
         try {
             // Apply a small scale adjustment to ensure HD quality
-            const canvas = await html2canvas(ticketRef.current, {
-                scale: 2, 
-                backgroundColor: null,
-                useCORS: true
+            const rect = ticketRef.current.getBoundingClientRect();
+            const width = rect.width;
+            const height = rect.height;
+
+            const imgData = await htmlToImage.toPng(ticketRef.current, {
+                pixelRatio: 2,
+                backgroundColor: 'transparent',
+                style: {
+                  transform: 'scale(1)',
+                  transformOrigin: 'top left'
+                }
             });
-            const imgData = canvas.toDataURL("image/png");
             
             const pdf = new jsPDF({
                 orientation: "portrait",
                 unit: "px",
-                format: [canvas.width / 2, canvas.height / 2] // match the un-scaled element size
+                format: [width, height] 
             });
             
-            pdf.addImage(imgData, "PNG", 0, 0, canvas.width / 2, canvas.height / 2);
+            pdf.addImage(imgData, "PNG", 0, 0, width, height);
             pdf.save(`TBT-Cafe-Receipt-${(order.id || order._id || "").slice(-6).toUpperCase()}.pdf`);
         } catch (error) {
             console.error("Failed to generate PDF", error);

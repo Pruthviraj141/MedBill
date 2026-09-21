@@ -14,6 +14,9 @@ Expects grouped array batch lists dynamically ingesting massive offline sync pus
 ### `POST /api/sync/voids`
 Mirrors identical structures isolating strict void array payloads triggering conditional SQL status string updates explicitly tracking original transaction payloads perfectly natively targeting the `VOIDED` keyword exclusively.
 
+### `GET /api/sync/orders`
+Extracts all Orders modified/created strictly AFTER the supplied time cursor `last_sync`. Supports bidirectional order replication flowing downwards into local Android environments via explicit identical object mapping payloads correctly smoothly cleanly.
+
 ### `GET /api/sync/products`
 Dumps identical arrays matching standard menu matrices tracking identically all product structures dynamically loaded onto tablets via synchronous initial bootstrap network executions flawlessly.
 

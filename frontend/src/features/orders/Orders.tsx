@@ -56,7 +56,7 @@ export function Orders() {
       if (!search) return true;
 
       const q = search.toLowerCase();
-      const invoice = (order.id || order._id).toLowerCase();
+      const invoice = String(order.id || order._id || '').toLowerCase();
       return invoice.includes(q);
     });
   }, [allOrders, period, search]);
@@ -118,8 +118,8 @@ export function Orders() {
       {filteredOrders.length > 0 && (
         <div className="order-list" style={{ display: 'grid', gap: 10 }}>
           {filteredOrders.map((order) => {
-            const invoice = (order.id || order._id).slice(-6).toUpperCase();
-            const itemCount = order.items.reduce((s, i) => s + i.quantity, 0);
+            const invoice = String(order.id || order._id || '').slice(-6).toUpperCase();
+            const itemCount = (order.items || []).reduce((s, i) => s + i.quantity, 0);
 
             const isVoided = order.status === 'VOIDED';
 
@@ -150,7 +150,7 @@ export function Orders() {
 
                 <div style={{ padding: '10px 12px', background: 'var(--bl-brown-lt)', borderRadius: 10, marginBottom: 12 }}>
                   <p style={{ margin: 0, fontSize: 13, color: 'var(--bl-ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {order.items.map(i => `${i.quantity}x ${i.name}`).join(', ')}
+                    {(order.items || []).map(i => `${i.quantity}x ${i.name}`).join(', ')}
                   </p>
                 </div>
 

@@ -7,15 +7,18 @@ ordersRouter.get('/', async (c) => {
   try {
     const { results } = await c.env.DB.prepare('SELECT * FROM orders ORDER BY created_at DESC LIMIT 100').all();
     
-    // To match frontend compatibility, we need to embed items. 
-    // In a real app we'd paginate or load items lazily, but here we load for the latest 100.
     if (results.length === 0) return c.json({ orders: [] });
-    
-    const orderIds = results.map(r => `'${r.id}'`).join(',');
-    const { results: itemsResults } = await c.env.DB.prepare(`SELECT * FROM order_items WHERE order_id IN (${orderIds})`).all();
+
+    // Safe: join order_items via a subquery using the already-returned IDs.
+    // D1 does not support array binding; we use a JOIN on the orders query directly.
+    const { results: itemsResults } = await c.env.DB.prepare(
+      `SELECT oi.* FROM order_items oi
+       INNER JOIN orders o ON o.id = oi.order_id
+       ORDER BY oi.order_id`
+    ).all();
     
     const orders = results.map(o => {
-      const items = itemsResults.filter(i => i.order_id === o.id).map(i => ({
+      const items = itemsResults.filter((i: any) => i.order_id === o.id).map((i: any) => ({
         productId: i.product_id,
         name: i.name_snapshot,
         quantity: i.quantity,
@@ -49,7 +52,10 @@ ordersRouter.post('/', async (c) => {
     const body = await c.req.json();
     // Support either direct order creation or sync payloads (which provide full id / date etc)
     const id = body.id || body._id || crypto.randomUUID();
-    const invoiceNumber = body.invoiceNumber || body.invoice_number || `INV-${Date.now()}`;
+    
+    const dateStr = new Date().toISOString().replace(/\D/g, '').slice(0, 8);
+    const invoiceNumber = body.invoiceNumber || body.invoice_number || `INV-${dateStr}-${id}`;
+    
     const paymentMethod = body.paymentMethod || body.payment_method;
     const createdAt = body.createdAt || body.created_at || new Date().toISOString();
     

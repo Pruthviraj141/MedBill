@@ -44,10 +44,10 @@ const products = [
   { name: 'Loaded Fries', category: 'Fries', price: 160, icon: '/icons/fries.png', active: true },
 
   // MAGGI 🍜
-  { name: 'Masala Maggi', category: 'Maggi', price: 80, icon: '🍜', active: true },
-  { name: 'Vegetable Maggi', category: 'Maggi', price: 110, icon: '🍜', active: true },
-  { name: 'Cheese Maggi', category: 'Maggi', price: 100, icon: '🍜', active: true },
-  { name: 'Tandoor Maggi', category: 'Maggi', price: 110, icon: '🍜', active: true },
+  { name: 'Masala Maggi', category: 'Maggi', price: 80, icon: '/images/maggie.png', active: true },
+  { name: 'Vegetable Maggi', category: 'Maggi', price: 110, icon: '/images/maggie.png', active: true },
+  { name: 'Cheese Maggi', category: 'Maggi', price: 100, icon: '/images/maggie.png', active: true },
+  { name: 'Tandoor Maggi', category: 'Maggi', price: 110, icon: '/images/maggie.png', active: true },
 
   // SPAGHETTI 🍝
   { name: 'Red Sauce Spaghetti', category: 'Spaghetti', price: 200, icon: '/icons/spaghetti.png', active: true },
@@ -68,20 +68,20 @@ const products = [
   { name: 'Brownie Cold Coffee', category: 'Coffee', price: 150, icon: '/icons/coffee.png', active: true },
 
   // SHAKE 🥤
-  { name: 'Strawberry Shake', category: 'Shake', price: 90, icon: '🥤', active: true },
-  { name: 'Mango Shake', category: 'Shake', price: 90, icon: '🥤', active: true },
-  { name: 'Chocolate Milk Shake', category: 'Shake', price: 90, icon: '🥤', active: true },
-  { name: 'Brownie Milk Shake', category: 'Shake', price: 110, icon: '🥤', active: true },
+  { name: 'Strawberry Shake', category: 'Shake', price: 90, icon: '/images/shake.png', active: true },
+  { name: 'Mango Shake', category: 'Shake', price: 90, icon: '/images/shake.png', active: true },
+  { name: 'Chocolate Milk Shake', category: 'Shake', price: 90, icon: '/images/shake.png', active: true },
+  { name: 'Brownie Milk Shake', category: 'Shake', price: 110, icon: '/images/shake.png', active: true },
 
   // NUGGETS 🍗
-  { name: 'Corn Cheese Ball', category: 'Nuggets', price: 130, icon: '🍘', active: true },
-  { name: 'Potato Cheese Ball', category: 'Nuggets', price: 110, icon: '🍘', active: true },
+  { name: 'Corn Cheese Ball', category: 'Nuggets', price: 130, icon: '/images/nuggets.png', active: true },
+  { name: 'Potato Cheese Ball', category: 'Nuggets', price: 110, icon: '/images/nuggets.png', active: true },
 
   // MOCKTAIL 🍹
-  { name: 'Mojito', category: 'Mocktail', price: 90, icon: '🍹', active: true },
-  { name: 'Green AppleMocktail', category: 'Mocktail', price: 90, icon: '🍹', active: true },
-  { name: 'Lemonade', category: 'Mocktail', price: 90, icon: '🍹', active: true },
-  { name: 'Masala Lemonade', category: 'Mocktail', price: 110, icon: '🍹', active: true },
+  { name: 'Mojito', category: 'Mocktail', price: 90, icon: '/images/mocktail.png', active: true },
+  { name: 'Green AppleMocktail', category: 'Mocktail', price: 90, icon: '/images/mocktail.png', active: true },
+  { name: 'Lemonade', category: 'Mocktail', price: 90, icon: '/images/mocktail.png', active: true },
+  { name: 'Masala Lemonade', category: 'Mocktail', price: 110, icon: '/images/mocktail.png', active: true },
 ];
 
 function generateId(name) {

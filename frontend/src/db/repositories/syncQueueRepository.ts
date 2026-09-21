@@ -25,12 +25,20 @@ export const syncQueueRepository = {
     await db.run(`UPDATE sync_queue SET status = 'SYNCED' WHERE id = ?`, [id]);
   },
   
-  markFailed: async (id: string, incrementAttempt = true) => {
+  markFailed: async (id: string, _incrementAttempt = true) => {
     const db = await getDB();
     const last_attempt = new Date().toISOString();
-    if (incrementAttempt) {
-      await db.run(`UPDATE sync_queue SET attempt_count = attempt_count + 1, last_attempt_at = ? WHERE id = ?`, [last_attempt, id]);
-    }
+    // Always increment attempt_count. When attempts reach 10, promote status to FAILED
+    // so the item is excluded from future getPending() calls. The local order row is
+    // NOT deleted — it remains visible in the UI and can be manually retried if needed.
+    await db.run(
+      `UPDATE sync_queue
+       SET attempt_count = attempt_count + 1,
+           last_attempt_at = ?,
+           status = CASE WHEN attempt_count + 1 >= 10 THEN 'FAILED' ELSE status END
+       WHERE id = ?`,
+      [last_attempt, id]
+    );
   },
 
   getPendingCount: async (): Promise<number> => {

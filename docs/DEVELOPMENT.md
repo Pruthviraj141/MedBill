@@ -10,29 +10,23 @@ Follow these precise steps to safely sandbox code interactions on your local mac
 
 ---
 
-## Running in the Web Simulator (Browser Development)
+## Running Local Development
 
-We intentionally maintain a fully functional "Web Simulator" mode that hooks standard HTTPS proxies for UI development, bypassing the strict Native Android `SQLite` demands safely.
+We intentionally maintain a fully functional "Web Simulator" mode that hooks standard networks for UI development, bypassing the strict Native Android `SQLite` demands safely.
 
-### 1. Launch the Cloudflare Development API (Terminal A)
-All local UI queries must terminate against a sandboxed `wrangler` micro-server.
-```bash
-cd backend
-npm install
-npm run dev
-```
-*Note: This binds a local node listener dynamically routing to your Cloudflare development credentials under `http://127.0.0.1:8787`.*
+You no longer need to run a local Cloudflare worker loop for most UI development.
 
-### 2. Launch the Vite UI Hot-Reload Server (Terminal B)
+### 1. Launch the Vite UI Hot-Reload Server
+This is all you need to spin up the local development dashboard:
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-### 3. Emulate Local Development Configurations
-To ensure your frontend targets your Local D1 Worker instead of Production Edge nodes, verify your `frontend/.env.development` or native shell arguments correctly bind to:
-`VITE_API_BASE_URL=http://127.0.0.1:8787/api`
+### 2. Emulate Local Development Configurations
+To ensure your frontend correctly maps to the live remote API, verify your `.env` specifies:
+`VITE_API_BASE_URL=https://cafe-pos-api.pruthvigavhane.workers.dev/api`
 
 ## Running Standard Validations
 ### TypeScript Typings Check

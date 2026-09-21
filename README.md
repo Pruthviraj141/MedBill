@@ -28,7 +28,7 @@ The application is built on a highly resilient mobile topology that ensures seam
 
 ## Environment Setup & Development
 For detailed instructions encompassing Node layouts, API definitions, testing, and production Worker integration:
-- See the [DEVELOPMENT.md](docs/DEVELOPMENT.md) guide to spin up the local D1 proxy environment.
+- See the [DEVELOPMENT.md](docs/DEVELOPMENT.md) guide to spin up the local UI targeting the real Cloudflare Edge Network.
 - See the [ANDROID.md](docs/ANDROID.md) guide for compiling the Capacitor Sandbox APK.
 
 ## Technical Documentation

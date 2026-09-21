@@ -19,6 +19,8 @@ import { Skeleton } from '../../components/ui/skeleton';
 import { Separator } from '../../components/ui/separator';
 import { motion } from 'framer-motion';
 import { AnimatedTicket } from '../../components/ui/ticket-confirmation-card';
+// FIX 1: Import printer service to wire thermal receipt printing into the Android checkout flow.
+import { printerService, printQueue } from '../../services/printer/printerService';
 
 const RECENT_KEY = 'tbt_recent_products';
 const MAX_RECENT = 12;
@@ -97,7 +99,17 @@ export function Billing() {
       };
       return uiOrder;
     },
-    onSuccess: (uiOrder) => { setLastOrder(uiOrder); clear(); setCartOpen(false); },
+    onSuccess: (uiOrder) => {
+      setLastOrder(uiOrder);
+      clear();
+      setCartOpen(false);
+      // FIX 1: Trigger thermal receipt printing after the checkout has committed.
+      // Fire-and-forget: a print failure NEVER affects the order result.
+      // If printing fails, the job is queued in localStorage for retry via Settings.
+      printerService.printOrder(uiOrder, uiOrder.items).then(ok => {
+        if (!ok) printQueue.addFailedJob(uiOrder, uiOrder.items);
+      });
+    },
   });
 
   const handleAdd = useCallback((id: string) => {

@@ -20,12 +20,4 @@ export class BrowserPreviewStore implements LocalStore {
   }
 }
 
-export interface PrinterService {
-  testPrint(): Promise<void>;
-  print(receipt: Receipt): Promise<void>;
-}
 
-export class PreviewPrinter implements PrinterService {
-  async testPrint(){ console.info('[printer] test print'); }
-  async print(receipt: Receipt){ console.info('[printer] receipt', receipt); }
-}

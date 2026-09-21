@@ -1,0 +1,55 @@
+/* Scoped desktop overrides to prevent conflicts */
+.desktop-layout {
+  --nav-height: 88px;
+}
+
+.desktop-layout ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.desktop-layout ::-webkit-scrollbar-track {
+  background: transparent;
+}
+.desktop-layout ::-webkit-scrollbar-thumb {
+  background-color: var(--muted-foreground);
+  border-radius: 20px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+.desktop-layout ::-webkit-scrollbar-thumb:hover {
+  background-color: var(--foreground);
+}
+
+.custom-scrollbar-horizontal::-webkit-scrollbar {
+  height: 6px;
+}
+.custom-scrollbar-horizontal::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar-horizontal::-webkit-scrollbar-thumb {
+  background-color: hsl(var(--muted-foreground) / 0.5);
+  border-radius: 10px;
+}
+.custom-scrollbar-horizontal::-webkit-scrollbar-thumb:hover {
+  background-color: hsl(var(--foreground) / 0.5);
+}
+
+.desktop-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 24px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+}
+.dark .desktop-card {
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+
+.desktop-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 4px;
+  background: linear-gradient(135deg, #a9653f 0%, #d89671 100%);
+  opacity: 0.9;
+  z-index: 10;
+}

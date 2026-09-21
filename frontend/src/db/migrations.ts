@@ -55,5 +55,11 @@ export const sqliteMigrations = [
       );
       CREATE INDEX IF NOT EXISTS idx_sync_queue_status ON sync_queue (status);
     `
+  },
+  {
+    version: 2,
+    query: `
+      ALTER TABLE orders ADD COLUMN synced_at TEXT;
+    `
   }
 ];

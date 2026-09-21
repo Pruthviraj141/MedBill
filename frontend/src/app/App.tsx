@@ -13,6 +13,9 @@ const Billing = lazy(() => import('../features/billing/Billing').then((module) =
 const Orders = lazy(() => import('../features/orders/Orders').then((module) => ({ default: module.Orders })));
 const Products = lazy(() => import('../features/products/Products').then((module) => ({ default: module.Products })));
 const SettingsView = lazy(() => import('../features/settings/SettingsView').then((module) => ({ default: module.SettingsView })));
+const DesktopApp = lazy(() => import('../features/desktop/DesktopApp').then((module) => ({ default: module.DesktopApp })));
+
+import { Capacitor } from '@capacitor/core';
 
 function NavItem({ active, icon, label, onClick }: { active: boolean; icon: React.ReactNode; label: string; onClick: () => void }) {
   return (
@@ -52,6 +55,7 @@ export function App() {
         setDbReady(true);
         // Initial cloud bootstrap sync
         syncService.pullCatalog().catch(console.error);
+        syncService.pullOrders().catch(console.error);
         // Start background synchronization daemon after DB is ready
         syncService.startBackgroundSync(15000);
       })
@@ -99,6 +103,16 @@ export function App() {
         <div className="w-12 h-12 rounded-full border-4 border-primary/30 border-t-primary animate-spin" />
         <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground">Initializing Database</p>
       </div>
+    );
+  }
+
+  const isDesktopWeb = !Capacitor.isNativePlatform();
+
+  if (isDesktopWeb) {
+    return (
+      <Suspense fallback={<div className="flex justify-center items-center h-[100dvh]"><div className="w-8 h-8 rounded-full border-4 border-primary/30 border-t-primary animate-spin" /></div>}>
+        <DesktopApp view={view} setView={setView} isOffline={isOffline} />
+      </Suspense>
     );
   }
 
