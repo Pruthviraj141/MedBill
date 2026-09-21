@@ -1,772 +1,604 @@
-You are working on my existing **TBT Cafe POS** project.
+TBT CAFE POS — FULL PRINTER SYSTEM FORENSIC AUDIT
+DO NOT MODIFY ANYTHING
 
-THIS IS A DEBUGGING + PRODUCTION FIX TASK.
+I do NOT want another implementation right now.
 
-Do NOT redesign the architecture from your own assumptions.
-Do NOT create a new backend/database if one already exists.
-Do NOT replace working functionality unnecessarily.
-Do NOT assume how the project works.
-FIRST inspect the actual codebase, identify the current architecture and data flow, then make the required changes.
+I want you to completely understand the CURRENT printer implementation
+already present in this repository, file-by-file and execution-path-by-
+execution-path, before any further changes are made.
 
-==================================================
-PROJECT CONTEXT
-===============
+The goal is to determine whether the CURRENT implementation is actually
+correct for:
 
-The application has:
+1. Desktop/Web → EZO Chota/Bada 58mm printer via USB
+2. Android APK → EZO Chota/Bada 58mm printer via Bluetooth + RawBT
 
-* React + Vite frontend
-* Capacitor Android application
-* Hono backend
-* Cloudflare Workers
-* Cloudflare D1 database
-* Android offline-first functionality using local SQLite/storage
-* Web application that is already successfully communicating with the real production server/database
+IMPORTANT:
+Do not claim that something is "fully working", "flawless", or "guaranteed"
+unless the repository evidence actually proves it.
 
-There are two clients:
+A physical EZO printer is NOT currently available, so you must clearly
+separate:
 
-1. Android application
-2. Web/laptop application
+A. Things that can be proven from code/tests
+B. Things that can be tested with the current virtual printer
+C. Things that REQUIRE the real EZO hardware
 
-THE MOST IMPORTANT REQUIREMENT:
+============================================================
+RULE 1 — ABSOLUTELY NO CODE CHANGES
+============================================================
 
-### BOTH CLIENTS MUST REPRESENT THE SAME REAL CAFE DATA.
+This is a READ-ONLY forensic audit.
 
-Android and Web must ultimately use the SAME production backend and SAME production D1 database.
+Do NOT:
+- edit files
+- create files
+- delete files
+- rename files
+- install packages
+- upgrade packages
+- change package.json
+- change environment files
+- change backend
+- change APIs
+- change SQLite
+- change Android code
+- change frontend code
+- refactor anything
 
-There must NOT be:
+Only inspect, trace, test, and report.
 
-* separate databases accidentally used by Android
-* a development database accidentally used by Android
-* a local-only database being treated as the source of truth
-* different Worker URLs
-* different API base URLs
-* different authentication contexts
-* different database bindings
-* fake/mock/demo data
-* hardcoded dashboard data
-* an isolated Android backend
-* duplicated datasets
+============================================================
+RULE 2 — INSPECT THE ENTIRE RELEVANT FILE SYSTEM
+============================================================
 
-Android may use SQLite/local storage ONLY as the offline cache / offline queue.
+First inspect the repository structure thoroughly.
 
-The production cloud database is the source of truth whenever synchronization is possible.
+Identify and inspect every file relevant to printing, including but not
+limited to:
 
-==================================================
-CURRENT PROBLEM
-===============
+- frontend package.json
+- frontend source tree
+- existing printer service
+- PrinterService
+- DesktopPrinterAdapter
+- AndroidPrinterAdapter
+- ESC/POS implementation
+- receipt formatter
+- ReceiptDocument mapper
+- print queue/state implementation
+- print-agent source
+- usb-print-agent
+- Vite configuration
+- Capacitor configuration
+- Android project configuration
+- Android Manifest
+- Android intent handling
+- RawBT integration
+- CORS implementation
+- localhost proxy communication
+- QR asset loading
+- qr.jpg references
+- environment variables
+- npm scripts
+- concurrently/process orchestration
+- existing SQLite repositories
+- checkout service
+- order persistence
+- sync code
+- any printer-related tests
 
-The Web application is currently syncing/working correctly with the real server.
+Search the ENTIRE repository for:
 
-The Android application is NOT behaving correctly.
+printer
+print
+receipt
+escpos
+escpos.ts
+RawBT
+rawbt:
+Bluetooth
+USB
+28080
+print-agent
+usb-print-agent
+qr.jpg
+ReceiptDocument
+PrinterService
+DesktopPrinterAdapter
+AndroidPrinterAdapter
+printJobId
+print queue
+window.print
+lp
+CUPS
+isNativePlatform
+Capacitor.isNativePlatform
 
-I have created bills/orders/requests through Android while offline/online, and after some time the Android application is again showing ZERO / empty data.
+Do not assume a file is irrelevant merely because its name does not
+contain "printer". Follow imports and execution paths.
 
-This is unacceptable.
+============================================================
+RULE 3 — TRACE THE DESKTOP FLOW LINE BY LINE
+============================================================
 
-Previously created Android data appears to disappear from the Android UI.
+Trace the COMPLETE desktop flow from button click to printer transport.
 
-I need you to determine exactly WHY this is happening.
+I want the exact execution chain:
 
-Possible causes must NOT be guessed.
+User clicks Print
+  ↓
+Which React component/function?
+  ↓
+Which service?
+  ↓
+Which data is supplied?
+  ↓
+Which ReceiptDocument mapper?
+  ↓
+Which receipt formatter?
+  ↓
+Which ESC/POS encoder?
+  ↓
+Which HTTP request?
+  ↓
+Which localhost endpoint?
+  ↓
+Which print-agent route?
+  ↓
+Which parser?
+  ↓
+Which virtual/USB branch?
+  ↓
+Which OS command?
+  ↓
+Which CUPS/USB destination?
 
-You must inspect and prove the real cause from the code.
+For every transition, identify the EXACT file and function.
 
-Examples of things you MUST investigate:
+Verify that the desktop browser NEVER attempts to use the Android RawBT
+transport.
 
-* Android API base URL
-* Capacitor configuration
-* environment variables
-* production vs development API URL
-* Hono Worker URL
-* Cloudflare Worker bindings
-* D1 database binding
-* database name/environment
-* local SQLite initialization
-* SQLite schema
-* local migrations
-* local database reset/recreation
-* app startup logic
-* seed logic
-* sync logic
-* pull sync
-* push sync
-* sync queue
-* sync status
-* conflict resolution
-* API response handling
-* authentication/session handling
-* tenant/cafe ID
-* user ID
-* device ID
-* filtering
-* date filtering
-* status filtering
-* dashboard queries
-* order queries
-* product queries
-* transaction queries
-* deletion logic
-* logout/login behavior
-* app reinstall/reset behavior
-* Capacitor lifecycle hooks
-* background synchronization
-* failed network requests
-* retry handling
-* race conditions
-* stale local cache
-* incorrect clearing of local storage
-* wrong database/table names
-* incorrect API routes
-* production endpoint mismatches
-* CORS
-* HTTPS
-* Cloudflare Worker environment bindings
-* D1 migrations
-* schema mismatch between Android and server
-* timestamp/date conversion
-* timezone issues
-* integer/string ID mismatches
-* duplicate ID handling
-* UUID generation
-* server-generated IDs
-* client-generated IDs
-* sync acknowledgment logic
+Verify that the desktop production/USB branch actually reaches the
+physical USB transport.
 
-==================================================
-PHASE 1 — UNDERSTAND THE PROJECT FIRST
-======================================
+Verify that virtual mode actually bypasses physical printing.
 
-Before modifying code, inspect the ENTIRE relevant architecture.
+Verify whether the current CUPS command requires a configured printer,
+and exactly how a printer is selected.
 
-Start by locating and reading:
+============================================================
+RULE 4 — TRACE THE ANDROID FLOW LINE BY LINE
+============================================================
 
-* frontend package.json
-* Android package/configuration
-* Capacitor configuration
-* all .env / .env.* files
-* Hono entry point
-* Hono route files
-* database access layer
-* D1 bindings
-* Cloudflare configuration
-* wrangler configuration
-* database schema
-* migrations
-* authentication implementation
-* API client implementation
-* Android native code related to networking/database
-* SQLite implementation
-* offline queue implementation
-* sync implementation
-* order/billing repositories
-* dashboard queries
-* product queries
-* all API endpoints used by Android
-* all API endpoints used by Web
+Trace the COMPLETE Android flow independently.
 
-Search the codebase rather than assuming file names.
+I want:
 
-Trace the actual data lifecycle.
+User clicks Print
+  ↓
+checkout/print function
+  ↓
+platform detection
+  ↓
+Capacitor/native detection
+  ↓
+AndroidPrinterAdapter
+  ↓
+receipt generation
+  ↓
+ESC/POS encoding
+  ↓
+Base64 conversion
+  ↓
+RawBT URI/Intent
+  ↓
+Android intent handling
+  ↓
+RawBT package
+  ↓
+Bluetooth printer
 
-For an Android bill, document the exact current flow:
+Verify that Android APK execution does NOT accidentally call:
 
-ANDROID UI
-→ local transaction
-→ SQLite/local store
-→ sync queue
-→ API client
-→ Hono endpoint
-→ Cloudflare Worker
-→ D1
-→ response
-→ local sync state
-→ UI refresh
+127.0.0.1:28080
+Desktop print agent
+CUPS
+lp
+Windows/Linux USB printing
 
-For a Web bill, document:
+Verify exactly how the Android code detects native Android.
 
-WEB UI
-→ API client
-→ Hono endpoint
-→ Cloudflare Worker
-→ D1
-→ response
-→ Web UI
+Do not assume that a condition such as Capacitor.isNativePlatform()
+automatically proves Android-only behavior. Inspect the surrounding
+conditions and platform checks.
 
-DO NOT CONTINUE UNTIL YOU UNDERSTAND THESE TWO FLOWS.
+============================================================
+RULE 5 — VERIFY THE RAWBT IMPLEMENTATION
+============================================================
 
-==================================================
-PHASE 2 — PROVE THE DATABASE IS THE SAME
-========================================
+Inspect the actual Android implementation.
+
+Confirm:
+
+- exact URI format
+- exact Base64 construction
+- exact intent mechanism
+- exact RawBT package/URI handling
+- whether the implementation uses raw ESC/POS bytes
+- whether the existing code sends HTML instead
+- whether Capacitor allows the required intent
+- what happens if RawBT is missing
+- what happens if intent launch fails
+- what happens if the printer is unavailable
+
+Compare the implementation with the documented RawBT intent flow.
+
+Do not change anything.
+
+Report mismatches explicitly.
+
+============================================================
+RULE 6 — VERIFY THE ESC/POS GENERATOR
+============================================================
+
+Inspect ESCPOS.ts and every function that contributes to the print buffer.
+
+Build an exact inventory of every ESC/POS command currently emitted.
+
+For example, verify actual use of:
+
+ESC @
+ESC a
+ESC E
+GS !
+LF
+ESC d
+image/raster commands
+cut/feed commands
+etc.
+
+Do not assume the command set.
+
+For every command, identify:
+
+- exact bytes
+- purpose
+- source function
+- where it is used
+- whether virtual parser supports it
+- whether desktop USB path preserves it
+- whether Android path preserves it
+
+Also inspect binary encoding and byte ordering.
+
+============================================================
+RULE 7 — VERIFY THE 58MM RECEIPT MODEL
+============================================================
+
+Inspect the actual receipt formatter.
+
+Verify:
+
+- paper width assumptions
+- printable columns
+- line lengths
+- item wrapping
+- quantity alignment
+- amount alignment
+- totals
+- GST
+- discounts
+- payment method
+- feed
+- cut
+- empty values
+- long product names
+- large totals
+- multiple items
+
+Do not assume "32 characters" is universally correct.
+
+Report the actual configured values and where they come from.
+
+============================================================
+RULE 8 — VERIFY QR.JPEG/QR.JPG END TO END
+============================================================
+
+Locate the EXISTING qr.jpg using the real filesystem.
+
+Report the exact path.
+
+Trace:
+
+qr.jpg
+ ↓
+asset loading
+ ↓
+image decoding
+ ↓
+resize
+ ↓
+monochrome conversion
+ ↓
+bitmap packing
+ ↓
+ESC/POS image command
+ ↓
+virtual renderer / real transport
+
+Verify that the SAME existing qr.jpg is used.
+
+Verify that no QR is being generated dynamically in place of it.
+
+Verify the dimensions and final bitmap dimensions.
+
+Verify the QR is centered and has sufficient quiet-zone space.
+
+If physical scanability cannot be proven without hardware, explicitly say:
+
+"Physical scanability requires hardware testing."
+
+Do not claim otherwise.
+
+============================================================
+RULE 9 — VERIFY WEB/PC LOCAL AGENT
+============================================================
+
+Inspect the entire local print-agent implementation.
+
+Confirm:
+
+- exact host
+- exact port
+- /health
+- /print
+- /preview
+- OPTIONS handling
+- CORS
+- request validation
+- error handling
+- virtual mode
+- USB mode
+- CUPS mode
+- shutdown behavior
+
+Confirm whether it binds to:
+
+127.0.0.1
+
+and whether it can accidentally bind to:
+
+0.0.0.0
+
+Confirm whether the agent can be reached by another device on the LAN.
+
+Confirm whether the browser uses the correct localhost address.
+
+Explain exactly what happens when the agent is not running.
+
+============================================================
+RULE 10 — VERIFY NPM DEV ORCHESTRATION
+============================================================
+
+Inspect the actual package.json.
+
+Verify exactly what happens when:
+
+npm run dev
+
+is executed.
+
+Confirm:
+
+- Vite starts
+- print agent starts
+- both processes remain alive
+- Ctrl+C terminates both
+- there is no hidden second manual command
+- virtual printer mode starts correctly
+- environment-variable syntax is cross-platform or not
+
+Do not modify package.json.
+
+Report Linux/macOS behavior separately from Windows behavior if
+different.
+
+============================================================
+RULE 11 — VERIFY OFFLINE-FIRST ORDER SAFETY
+============================================================
+
+Trace the checkout flow.
+
+Prove the exact ordering:
+
+SQLite/local order transaction
+  ↓
+successful local commit
+  ↓
+print trigger
+  ↓
+cloud sync independently
+
+Verify that printing does NOT block successful order persistence.
+
+Verify that cloud synchronization is NOT required for printing.
+
+Verify that printer failure does NOT:
+- rollback order
+- delete order
+- duplicate order
+- duplicate payment
+- alter totals
+
+============================================================
+RULE 12 — VERIFY PRINT JOB IDEMPOTENCY
+============================================================
+
+Inspect the actual implementation.
+
+Determine whether print-job state is:
+
+- memory only
+- persistent
+- SQLite-backed
+- localStorage
+- another mechanism
+
+Verify:
+
+- printJobId generation
+- order.id association
+- retry behavior
+- app restart behavior
+- double-click behavior
+- duplicate submission behavior
+
+Do not assume that an in-memory lock provides restart-safe idempotency.
+
+Report exactly what is and is not protected.
+
+============================================================
+RULE 13 — VERIFY VIRTUAL PRINTER
+============================================================
+
+Inspect the virtual ESC/POS renderer line by line.
+
+Determine:
+
+- which ESC/POS commands it actually parses
+- which are unsupported
+- whether unsupported commands are ignored
+- whether QR/image data is actually rendered
+- whether text alignment is correct
+- whether bold/size commands are correct
+- whether feed commands are correct
+- whether the preview truly represents the generated ESC/POS bytes
+
+Verify that the virtual renderer consumes the SAME binary buffer used by
+the eventual physical printer path.
+
+Do not call the virtual renderer an "exact EZO emulator" unless the code
+actually proves that.
+
+============================================================
+RULE 14 — VERIFY REAL EZO COMPATIBILITY
+============================================================
 
 This is critical.
 
-Verify that Android's online requests and Web's online requests point to the SAME:
+We are targeting the EZO Chota/Bada 58mm thermal machine.
+
+Use the repository evidence plus known documented integration behavior,
+but do NOT claim hardware compatibility that cannot be proven without
+the physical unit.
+
+Determine:
+
+1. Is the implementation producing standard ESC/POS?
+2. Is the image command compatible with likely EZO/58mm behavior?
+3. Is the text encoding configurable?
+4. Is ₹ supported/tested?
+5. Is Bluetooth transport handled through RawBT?
+6. Is USB transport handled through CUPS/raw output?
+7. Are there any hardware-specific assumptions?
+8. Which points require physical EZO verification?
+
+Clearly separate:
+
+PROVEN
+LIKELY
+REQUIRES HARDWARE TEST
+
+============================================================
+RULE 15 — SECURITY REVIEW
+============================================================
+
+Inspect security around the local print agent.
+
+Verify:
+
+- binding
+- CORS
+- origin handling
+- request validation
+- localhost exposure
+- authentication if any
+- oversized request handling
+
+Do not change anything.
+
+Point out anything that could allow another local/LAN application to
+trigger printing.
+
+============================================================
+RULE 16 — BUILD AND TEST REVIEW
+============================================================
+
+Run/read existing tests and build configuration where safe, but do not
+modify anything.
+
+Verify:
+
+- frontend TypeScript
+- frontend build
+- Android build configuration
+- printer agent startup
+- /health
+- /preview
+- virtual print path
+
+Do not install dependencies or alter configuration just to make tests
+pass.
+
+============================================================
+FINAL REPORT FORMAT
+============================================================
+
+Return a detailed forensic report with these sections:
+
+1. CURRENT ARCHITECTURE
+2. EXACT DESKTOP EXECUTION FLOW
+3. EXACT ANDROID EXECUTION FLOW
+4. FILE-BY-FILE PRINTER MAP
+5. ESC/POS COMMAND INVENTORY
+6. 58MM RECEIPT ANALYSIS
+7. qr.jpg EXACT PATH + PIPELINE
+8. DESKTOP USB/CUPS ANALYSIS
+9. ANDROID RAWBT ANALYSIS
+10. VIRTUAL PRINTER ANALYSIS
+11. OFFLINE/SQLITE SAFETY ANALYSIS
+12. PRINT JOB IDEMPOTENCY ANALYSIS
+13. SECURITY ANALYSIS
+14. BUILD/TEST RESULTS
+15. PROVEN TO WORK FROM CODE
+16. PROVEN TO WORK IN VIRTUAL TESTING
+17. REQUIRES PHYSICAL EZO TESTING
+18. RISKS / BUGS / CONTRADICTIONS FOUND
+19. EXACT MINIMUM CHANGES NEEDED, IF ANY
+
+For every detected problem, identify:
+
+- exact file
+- exact function
+- exact issue
+- why it is an issue
+- severity
+- safest minimal fix
+
+DO NOT FIX ANYTHING YET.
+
+FINAL RULE:
 
-* production Hono/Worker URL
-* Cloudflare Worker
-* environment
-* D1 database
-* D1 binding
-* database schema
-* tenant/cafe context
+Do not tell me "it works perfectly" simply because the code looks correct.
 
-Check the actual runtime values.
+I want evidence.
 
-Do not just inspect source files and assume.
+I want you to understand the entire current implementation first.
 
-Add temporary diagnostic logging where required.
+No code modifications.
+No refactoring.
+No new dependencies.
+No "improvements".
 
-Create a clear verification such as:
-
-Android:
-API BASE URL = ______
-Worker = ______
-Environment = ______
-Authenticated user = ______
-Cafe/Tenant = ______
-
-Web:
-API BASE URL = ______
-Worker = ______
-Environment = ______
-Authenticated user = ______
-Cafe/Tenant = ______
-
-Confirm that both are writing and reading from the SAME production D1.
-
-If they are not, FIX THAT FIRST.
-
-==================================================
-PHASE 3 — FIX OFFLINE-FIRST CORRECTLY
-=====================================
-
-The Android application MUST remain offline-first.
-
-Required behavior:
-
-### Scenario A — Android completely offline
-
-User creates:
-
-Bill #1001
-Bill #1002
-Bill #1003
-
-The app must:
-
-1. Save them locally immediately.
-2. Display them immediately.
-3. Keep them after app restart.
-4. Mark them as pending sync.
-5. NOT delete them merely because there is no internet.
-6. NOT replace them with an empty server response.
-7. NOT clear local data on startup.
-8. NOT treat failed sync as successful sync.
-
-Example local state:
-
-bill 1001 = pending
-bill 1002 = pending
-bill 1003 = pending
-
-### Scenario B — Internet comes back
-
-Android must:
-
-1. Detect connectivity.
-2. Read pending records.
-3. Send them to Hono.
-4. Hono validates and writes them to D1.
-5. Server returns success + canonical server ID.
-6. Android marks the local record as synced.
-7. The local record remains visible.
-8. Android can pull the authoritative server state.
-9. UI updates correctly.
-
-### Scenario C — Sync fails
-
-If one request fails:
-
-* DO NOT delete the local record.
-* DO NOT mark it as synced.
-* Keep it pending/failed.
-* Store useful error information.
-* Retry later.
-
-==================================================
-PHASE 4 — SYNC MUST BE BIDIRECTIONAL
-====================================
-
-Do not implement only:
-
-Android → Server.
-
-We also need:
-
-Server → Android.
-
-Android needs to be able to recover its state from the production server.
-
-For example:
-
-Android local database accidentally becomes empty.
-
-After authentication + sync:
-
-Android should be able to pull the current authoritative cloud data and reconstruct the local cache.
-
-Implement a reliable synchronization strategy.
-
-At minimum, establish:
-
-PUSH:
-Local pending changes → Hono → D1
-
-PULL:
-D1 authoritative changes → Hono → Android local database
-
-Use stable IDs.
-
-Do NOT depend on array indexes.
-
-Do NOT use temporary random IDs that can collide.
-
-Design proper idempotency so that retrying the same bill does not create duplicates.
-
-==================================================
-PHASE 5 — PREVENT THE “SHOWING ZERO AGAIN” BUG
-==============================================
-
-This is the most important bug currently.
-
-Find the exact code responsible for the Android screen returning to ZERO.
-
-Investigate:
-
-* app startup
-* database initialization
-* database clearing
-* migrations
-* state initialization
-* API fetch
-* failed API fetch
-* empty API response
-* cache replacement
-* sync completion
-* logout
-* authentication refresh
-* date range
-* cafe ID
-* filtering
-* Zustand/Redux/context state if applicable
-* React Query/TanStack Query cache if applicable
-* SQLite query result handling
-
-IMPORTANT:
-
-An empty server response must NOT automatically mean:
-
-“Delete all local records.”
-
-For example:
-
-If local SQLite contains:
-
-100 bills
-
-and the server request fails,
-
-the app MUST NOT replace those 100 bills with:
-
-[]
-
-Instead:
-
-* retain local data
-* show cached/local data
-* indicate sync status
-* retry synchronization
-
-Distinguish clearly between:
-
-SUCCESS + ZERO RESULTS
-
-and
-
-REQUEST FAILED / OFFLINE / AUTH FAILED / SYNC FAILED.
-
-These are NOT the same state.
-
-==================================================
-PHASE 6 — WEB MUST REMAIN WORKING
-=================================
-
-The Web application is already working with the real server.
-
-Do NOT break it.
-
-Any backend/database changes must be tested against both:
-
-Android
-AND
-Web
-
-When Android creates a bill online:
-
-→ it must appear on Web.
-
-When Web creates a bill:
-
-→ it must become available to Android after synchronization.
-
-When Android creates a bill offline:
-
-→ after synchronization it must appear in D1 and therefore on Web.
-
-This is the definition of success.
-
-==================================================
-PHASE 7 — DASHBOARD MUST BE FIXED
-=================================
-
-The dashboard currently does NOT show correct operational data.
-
-Do not use mock values.
-
-Do not calculate dashboard numbers separately from the actual source data unless there is a clear reason.
-
-Dashboard must be driven from the SAME production data.
-
-Audit every dashboard metric.
-
-Examples:
-
-* Today's sales
-* Total orders
-* Revenue
-* Average order value
-* Pending orders
-* Completed orders
-* Cancelled orders
-* Top products
-* Sales activity
-* Peak hours
-* Daily/weekly/monthly trends
-* Payment method totals
-* Product quantities
-* Any KPI shown on the dashboard
-
-For every metric verify:
-
-1. What database table is the source?
-2. What query is used?
-3. What date/time range is used?
-4. What timezone is used?
-5. What filters are applied?
-6. Does Android data appear?
-7. Does Web data appear?
-8. Are cancelled/refunded orders handled correctly?
-9. Are duplicates possible?
-10. Does the value match the raw database records?
-
-Create a diagnostic/test dataset if necessary and manually verify calculations.
-
-Example:
-
-If D1 contains:
-
-Order 1 = ₹100
-Order 2 = ₹200
-Order 3 = ₹300
-
-dashboard TODAY'S SALES must show:
-
-₹600
-
-not:
-
-₹0
-₹300
-₹6000
-or some cached/mock number.
-
-==================================================
-PHASE 8 — TIMESTAMPS / TIMEZONE
-===============================
-
-Café reports depend on date/time.
-
-Do not rely on inconsistent local date formatting.
-
-Use a consistent timestamp strategy.
-
-Store enough information to distinguish:
-
-client_created_at
-server_created_at
-updated_at
-synced_at
-
-Be careful with:
-
-India timezone
-IST / UTC
-day boundaries
-"today"
-"this week"
-"this month"
-
-A bill created at:
-
-23:59 IST
-
-must not incorrectly appear as the next day's sale because of a timezone conversion bug.
-
-==================================================
-PHASE 9 — LOGGING / DEBUGGING
-=============================
-
-Add useful development diagnostics for synchronization.
-
-For every sync cycle, log enough information to identify:
-
-SYNC START
-device ID
-user ID
-cafe/tenant ID
-pending record count
-API endpoint
-request ID
-records sent
-records accepted
-records rejected
-records skipped
-server response
-records marked synced
-records remaining pending
-SYNC END
-
-Do not log sensitive credentials or tokens.
-
-Add clear error handling.
-
-For example:
-
-SYNC FAILED
-reason: network unavailable
-pending records retained: 7
-retry scheduled: yes
-
-==================================================
-PHASE 10 — DATABASE CONSISTENCY
-===============================
-
-Review the D1 schema and Android SQLite schema side by side.
-
-They must have compatible representations for:
-
-* order IDs
-* bill IDs
-* product IDs
-* customer IDs if used
-* timestamps
-* numeric values
-* status
-* payment method
-* sync state
-* created_at
-* updated_at
-* deleted_at if soft-delete is used
-
-Identify and fix mismatches.
-
-==================================================
-PHASE 11 — DO NOT DESTROY USER DATA
-===================================
-
-This is extremely important.
-
-I have already created real billing data through Android.
-
-DO NOT:
-
-* wipe SQLite
-* drop tables
-* recreate the database unnecessarily
-* reset D1
-* delete production records
-* run destructive migrations
-* replace real data with seed/demo data
-
-unless absolutely required and only when there is a safe migration path.
-
-If existing local data currently exists, preserve it and migrate it.
-
-If records cannot be safely migrated automatically, stop and report exactly why rather than destroying them.
-
-==================================================
-PHASE 12 — TEST MATRIX
-======================
-
-After implementing the fix, test all of these:
-
-TEST 1:
-Android online → create bill → verify D1 → verify Web
-
-TEST 2:
-Android offline → create bill → close app → reopen → verify bill remains
-
-TEST 3:
-Android offline → create 3 bills → reconnect → verify all 3 sync
-
-TEST 4:
-Android offline → create bill → internet returns → sync fails → verify bill remains pending
-
-TEST 5:
-Retry failed sync → verify only one server record exists
-
-TEST 6:
-Web creates bill → Android sync/pull → verify bill appears
-
-TEST 7:
-Android creates bill → Web refresh → verify bill appears
-
-TEST 8:
-Restart Android application → verify data remains
-
-TEST 9:
-Dashboard values match raw D1 data
-
-TEST 10:
-Today's date/reporting respects IST correctly
-
-TEST 11:
-Logout/login → verify authorized data remains available
-
-TEST 12:
-No network → dashboard should show cached/local information rather than falsely showing ZERO if local data exists
-
-==================================================
-PHASE 13 — IMPLEMENTATION RULE
-==============================
-
-Do not just give me suggestions.
-
-Actually inspect and modify the existing project.
-
-Use the existing architecture where possible.
-
-Do not introduce unnecessary technologies.
-
-Do not replace Hono.
-
-Do not replace Cloudflare D1.
-
-Do not remove offline-first Android functionality.
-
-Do not convert Android into a purely online application.
-
-Do not create a second production backend.
-
-Do not create a second database.
-
-==================================================
-SUCCESS CRITERIA
-================
-
-The task is COMPLETE only when all of these are true:
-
-1. Android and Web use the SAME production Hono/Cloudflare backend.
-
-2. Both use the SAME production D1 database.
-
-3. Android can create bills offline.
-
-4. Offline bills survive app restarts.
-
-5. Offline bills synchronize to D1 when internet returns.
-
-6. Synced Android bills appear on Web.
-
-7. Web-created bills appear on Android after synchronization.
-
-8. Sync failures do not delete local data.
-
-9. Duplicate sync attempts do not create duplicate bills.
-
-10. Android no longer randomly returns to ZERO because of a failed/empty synchronization request.
-
-11. Dashboard values are based on real production data.
-
-12. Dashboard values match actual database records.
-
-13. Date/time calculations are correct for India/IST.
-
-14. Existing user data is preserved.
-
-15. The implementation is stable enough for real café usage.
-
-==================================================
-FINAL REPORT REQUIRED
-=====================
-
-After fixing everything, give me a concise engineering report containing:
-
-A. ROOT CAUSE
-Exactly why Android was showing zero / losing its data.
-
-B. WHAT WAS WRONG
-List the actual code/configuration problems discovered.
-
-C. WHAT YOU CHANGED
-List the files and important changes.
-
-D. DATA FLOW AFTER FIX
-Show:
-
-Android Offline
-→ SQLite
-→ Sync Queue
-→ Hono
-→ D1
-
-Android Online
-→ Hono
-→ D1
-
-Web
-→ Hono
-→ D1
-
-E. DATABASE CONSISTENCY
-Confirm whether Android and Web are using exactly the same production D1.
-
-F. SYNC BEHAVIOR
-Explain push + pull sync and retry behavior.
-
-G. DASHBOARD
-Explain the source and calculation for each important dashboard metric.
-
-H. TEST RESULTS
-Report the results of every test in the TEST MATRIX.
-
-I. REMAINING ISSUES
-Only mention issues that are actually proven to remain.
-
-MOST IMPORTANT INSTRUCTION:
-
-DO NOT TELL ME WHAT YOU "THINK" THE PROJECT IS DOING.
-
-INSPECT THE ACTUAL CODE FIRST.
-
-TRACE THE REAL DATA FLOW.
-
-IDENTIFY THE REAL ROOT CAUSE.
-
-THEN FIX IT.
-
-Do not make assumptions simply because the project is offline-first.
-
-The goal is not to create a theoretical architecture.
-
-The goal is to make THIS EXISTING TBT CAFE POS work correctly with REAL DATA on BOTH ANDROID AND WEB.
+AUDIT ONLY.

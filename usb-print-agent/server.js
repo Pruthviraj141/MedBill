@@ -1,14 +1,19 @@
 import express from 'express';
 import cors from 'cors';
-import { exec } from 'child_process';
-import { WriteStream } from 'tty';
+import { exec, spawn } from 'child_process';
 import fs from 'fs';
 import os from 'os';
 
 const app = express();
 const PORT = 28080;
 
-app.use(cors({ origin: '*', methods: ['GET', 'POST', 'OPTIONS'], allowedHeaders: ['Content-Type'] }));
+// FIX 7: Restrict CORS to known Vite dev-server origins only.
+// A wildcard would allow any browser tab on this machine to trigger printing.
+app.use(cors({
+  origin: ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:8080', 'http://127.0.0.1:8080'],
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type']
+}));
 app.use(express.json({ limit: '10mb' }));
 
 let lastVirtualReceipt = "<html><body><h2>No virtual receipt generated yet. Print an order first!</h2></body></html>";
@@ -85,55 +90,84 @@ function parseESCPOS(buffer) {
     return html;
 }
 
+// FIX 4: Read optional explicit printer name from environment.
+// Set PRINTER_NAME to the CUPS queue name (e.g. EZO-58) to avoid relying on the OS default printer.
+// If unset, falls back to the OS default (existing behaviour).
+const PRINTER_NAME = process.env.PRINTER_NAME || '';
+if (PRINTER_NAME) {
+  console.log(`[PRINTER AGENT] Explicit printer target: ${PRINTER_NAME}`);
+} else {
+  console.log('[PRINTER AGENT] No PRINTER_NAME set — using OS default printer.');
+}
+
 app.post('/print', (req, res) => {
   const { payload } = req.body;
-  
+
   if (!payload) {
     return res.status(400).send({ error: 'Missing base64 payload' });
   }
 
   try {
     const buffer = Buffer.from(payload, 'base64');
-    
+
     // Virtual Mode Development Intercept
     if (process.env.PRINTER_MODE === 'virtual') {
       lastVirtualReceipt = parseESCPOS(buffer);
       console.log(`[VIRTUAL PRINTER] Rendered receipt cleanly (${buffer.length} bytes). Browse to /preview`);
       return res.status(200).send({
-         success: true,
-         message: 'PRINT SUCCESS — VIRTUAL PRINTER',
-         jobId: `v-job-${Date.now()}`,
-         bytes: buffer.length,
-         previewUrl: 'http://127.0.0.1:28080/preview'
+        success: true,
+        message: 'PRINT SUCCESS — VIRTUAL PRINTER',
+        jobId: `v-job-${Date.now()}`,
+        bytes: buffer.length,
+        previewUrl: 'http://127.0.0.1:28080/preview'
       });
     }
 
-    // Safest cross-platform raw dump to default USB generic printer
     const isWindows = os.platform() === 'win32';
-    
+
     if (isWindows) {
-      // In Windows, a raw print usually goes via temp file + Print /D:
+      // Windows: 'print /D:' has no spawn-friendly equivalent; exec is acceptable here
+      // because tempPath is built from Date.now() with no user input.
+      // IMPORTANT: Set PRINTER_NAME to the exact Windows share name of the EZO printer.
+      // The default fallback 'ThermalPrinter' must match the actual share name on this machine.
+      // Example: net share to list shares; set PRINTER_NAME=EZO-TBT in environment.
+      const printerTarget = PRINTER_NAME || 'ThermalPrinter';
       const tempPath = `${os.tmpdir()}\\pos_receipt_${Date.now()}.bin`;
       fs.writeFileSync(tempPath, buffer);
-      // Assumes default thermal is shared or mapped. Usually users map standard POS-58
-      exec(`print /D:"\\\\localhost\\ThermalPrinter" "${tempPath}"`, (error) => {
-        if (error) console.error("Windows print Error:", error);
-        // Clean up
+      exec(`print /D:"\\\\localhost\\${printerTarget}" "${tempPath}"`, (error) => {
         fs.unlink(tempPath, () => {});
+        if (error) {
+          console.error('[PRINTER AGENT] Windows print error:', error.message);
+          return res.status(500).send({ error: 'OS print command failed.', detail: error.message });
+        }
+        res.status(200).send({ success: true, message: 'Print job completed.' });
       });
     } else {
-      // Linux/Mac - usually lp -o raw handles generic ESCPOS streams flawlessly
+      // Linux/Mac: use spawn with an explicit argument array — no shell interpolation,
+      // no injection risk even if PRINTER_NAME contains unexpected characters.
+      const printerFlag = PRINTER_NAME ? ['-d', PRINTER_NAME] : [];
       const tempPath = `/tmp/pos_receipt_${Date.now()}.bin`;
       fs.writeFileSync(tempPath, buffer);
-      exec(`lp -o raw ${tempPath}`, (error) => {
-        if (error) console.error("Unix lp print Error:", error);
+      const lpArgs = [...printerFlag, '-o', 'raw', tempPath];
+      const lp = spawn('lp', lpArgs, { stdio: 'pipe' });
+      let stderrOutput = '';
+      lp.stderr.on('data', (data) => { stderrOutput += data.toString(); });
+      lp.on('close', (code) => {
         fs.unlink(tempPath, () => {});
+        if (code !== 0) {
+          console.error(`[PRINTER AGENT] lp exited with code ${code}: ${stderrOutput}`);
+          return res.status(500).send({ error: 'OS print command failed.', detail: stderrOutput.trim() || `exit code ${code}` });
+        }
+        res.status(200).send({ success: true, message: 'Print job completed.' });
+      });
+      lp.on('error', (err) => {
+        fs.unlink(tempPath, () => {});
+        console.error('[PRINTER AGENT] spawn error:', err.message);
+        if (!res.headersSent) res.status(500).send({ error: 'Failed to start lp.', detail: err.message });
       });
     }
-
-    res.status(200).send({ success: true, message: 'Print job dispatched to local spooler.' });
   } catch (error) {
-    console.error('Print Error:', error);
+    console.error('[PRINTER AGENT] Unexpected error:', error);
     res.status(500).send({ error: 'Local print dispatcher failed.' });
   }
 });

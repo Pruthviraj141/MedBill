@@ -1,20 +1,49 @@
 import React, { useState, useMemo } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ordersRepository } from '../../../db/repositories/ordersRepository';
 import { Loader2, Search, Clock, CheckCircle, XCircle, ShoppingBag, BarChart3, Banknote, Sparkles, Trash2, ArrowRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { formatMoney } from '../../../utils/format';
 import { Order } from '../../../types';
-
+import { useOrders } from '../../../hooks/useOrders';
+import { useQueryClient, useMutation } from '@tanstack/react-query';
+import { ordersRepository } from '../../../db/repositories/ordersRepository';
 
 export function DesktopOrders() {
-  const { data: orders = [], isLoading } = useQuery({
-    queryKey: ['orders'],
-    queryFn: () => ordersRepository.getOrders(200)
-  });
-
+  const queryClient = useQueryClient();
+  const ordersQuery = useOrders();
+  const rawData = ordersQuery.data;
+  const orders = useMemo(() => {
+    if (Array.isArray(rawData)) return rawData;
+    if (rawData && Array.isArray((rawData as any)?.orders)) return (rawData as any).orders;
+    return [];
+  }, [rawData]);
+  const isLoading = ordersQuery.isLoading;
+  
   const [search, setSearch] = useState('');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+
+  const deleteMutation = useMutation({
+    mutationFn: async ({ id, pin }: { id: string; pin: string }) => {
+      if (pin !== '2110') throw new Error('Invalid PIN');
+      await ordersRepository.voidOrder(id, 'Admin voided');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      alert('Transaction successfully archived and voided.');
+      setSelectedOrder(null);
+    },
+    onError: (e: any) => {
+      alert(`Deletion failed: ${e.message}`);
+    }
+  });
+
+  const handleDelete = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    const pin = window.prompt('Enter ADMIN PIN [2110] to permanently void and archive this transaction:');
+    if (pin) {
+      deleteMutation.mutate({ id, pin });
+    }
+  };
   
   if (isLoading) {
      return <div className="w-full h-[50vh] flex items-center justify-center"><Loader2 className="animate-spin text-primary opacity-50" size={48}/></div>;
@@ -23,24 +52,29 @@ export function DesktopOrders() {
   const nowMs = Date.now();
   const oneDayMs = 24 * 60 * 60 * 1000;
   
-  // Categorize orders by time
-  const filtered = orders.filter(o => {
-    // 1. Text Search Filter
-    const inv = (o as any).invoice_number || (o as any).invoiceNumber || o.id || '';
-    const matchesSearch = search === '' || 
-      inv.toLowerCase().includes(search.toLowerCase()) ||
-      (search.toLowerCase() === 'voided' && o.status === 'VOIDED') ||
-      (search.toLowerCase() === 'upi' && ((o as any).payment_method === 'UPI' || (o as any).paymentMethod === 'UPI')) ||
-      (search.toLowerCase() === 'cash' && ((o as any).payment_method === 'CASH' || (o as any).paymentMethod === 'CASH'));
-      
-    if (!matchesSearch) return false;
-
-    return matchesSearch;
+  const filtered = (orders || []).filter((o: any) => {
+    try {
+      if (!o) return false;
+      const inv = (o as any).invoice_number || (o as any).invoiceNumber || o.id || '';
+      const safeSearch = String(search || '').toLowerCase();
+      const matchesSearch = search === '' || 
+        String(inv).toLowerCase().includes(safeSearch) ||
+        (safeSearch === 'voided' && o.status === 'VOIDED') ||
+        (safeSearch === 'upi' && ((o as any).payment_method === 'UPI' || (o as any).paymentMethod === 'UPI')) ||
+        (safeSearch === 'cash' && ((o as any).payment_method === 'CASH' || (o as any).paymentMethod === 'CASH'));
+      return matchesSearch;
+    } catch (err) {
+      return false;
+    }
   });
 
-  const totalSales = filtered.reduce((sum, o) => {
-     if (o.status === 'VOIDED') return sum;
-     return sum + ((o as any).total ?? (o as any).grandTotal ?? 0);
+  const totalSales = filtered.reduce((sum: number, o: any) => {
+    try {
+      if (!o || o.status === 'VOIDED') return sum;
+      return sum + Number((o as any).total ?? (o as any).grandTotal ?? 0);
+    } catch (err) {
+      return sum;
+    }
   }, 0);
 
 
@@ -119,33 +153,35 @@ export function DesktopOrders() {
             </div>
          ) : (
            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 auto-rows-max">
-             {filtered.map((order, idx) => {
+             {filtered.map((order: any, idx: number) => {
                const items = (order as any).items || [];
                const itemsStr = items.map((i: any) => `${i.quantity}x ${i.name_snapshot || i.name}`).join(', ');
                const totalAmount = (order as any).total ?? (order as any).grandTotal ?? 0;
-               const d = (order as any).created_at || (order as any).createdAt ? new Date((order as any).created_at || (order as any).createdAt) : new Date();
-               
-               const isVoid = order.status === 'VOIDED';
-               
-               return (
-                 <div key={order.id || idx} className="bg-card dark:bg-[#1A1A1A] border border-border/80 dark:border-white/5 rounded-3xl p-5 flex flex-col gap-4 shadow-sm hover:border-primary/30 transition-colors">
-                   
-                   {/* Card Top Row */}
-                   <div className="flex items-start justify-between w-full">
-                     <div className="flex items-start gap-4">
-                       <div className="w-[72px] h-[72px] bg-background dark:bg-black/40 rounded-[20px] flex items-center justify-center border border-border/50 text-muted-foreground shadow-inner overflow-hidden">
-                          {/* If items array has an image, render it. We don't have it in scope, so fallback gracefully */}
-                          <ShoppingBag size={28} className="opacity-40" strokeWidth={1.5} />
-                       </div>
-                       
-                       <div className="flex flex-col gap-1 pt-1">
-                        <strong className="text-xl font-black tracking-tight text-foreground uppercase">
-                             #{((order as any).invoice_number || (order as any).invoiceNumber || 'UNKN').replace('INV-', '')}
-                          </strong>
-                          <span className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
-                             <Clock size={12} className="opacity-60"/>
-                             {format(d, 'h:mm a')} • {format(d, 'dd MMM yyyy')}
-                          </span>
+                const dRaw = (order as any).created_at || (order as any).createdAt;
+                let d = dRaw ? new Date(dRaw) : new Date();
+                if (isNaN(d.getTime())) d = new Date();
+                
+                const isVoid = order?.status === 'VOIDED';
+                
+                return (
+                  <div key={order?.id || idx} className="bg-card dark:bg-[#1A1A1A] border border-border/80 dark:border-white/5 rounded-3xl p-5 flex flex-col gap-4 shadow-sm hover:border-primary/30 transition-colors">
+                    
+                    {/* Card Top Row */}
+                    <div className="flex items-start justify-between w-full">
+                      <div className="flex items-start gap-4">
+                        <div className="w-[72px] h-[72px] bg-background dark:bg-black/40 rounded-[20px] flex items-center justify-center border border-border/50 text-muted-foreground shadow-inner overflow-hidden">
+                           {/* If items array has an image, render it. We don't have it in scope, so fallback gracefully */}
+                           <ShoppingBag size={28} className="opacity-40" strokeWidth={1.5} />
+                        </div>
+                        
+                        <div className="flex flex-col gap-1 pt-1">
+                         <strong className="text-xl font-black tracking-tight text-foreground uppercase">
+                              #{String((order as any).invoice_number || (order as any).invoiceNumber || 'UNKN').replace('INV-', '')}
+                           </strong>
+                           <span className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
+                              <Clock size={12} className="opacity-60"/>
+                              {format(d, 'h:mm a')} • {format(d, 'dd MMM yyyy')}
+                           </span>
                        </div>
                      </div>
                      
@@ -177,7 +213,12 @@ export function DesktopOrders() {
                      </span>
                      
                      <div className="flex items-center gap-3">
-                        <button className="w-9 h-9 rounded-full bg-destructive/10 text-destructive flex items-center justify-center hover:bg-destructive hover:text-destructive-foreground transition-all">
+                        <button 
+                          onClick={(e) => handleDelete(e, String(order.id || (order as any)._id))}
+                          disabled={isVoid || deleteMutation.isPending}
+                          title={isVoid ? 'Order is already voided' : 'Void & Delete Transaction'}
+                          className="w-9 h-9 rounded-full bg-destructive/10 text-destructive flex items-center justify-center hover:bg-destructive hover:text-destructive-foreground transition-all disabled:opacity-30 disabled:pointer-events-none"
+                        >
                            <Trash2 size={15} strokeWidth={2.5} />
                         </button>
                         
@@ -211,17 +252,18 @@ export function DesktopOrders() {
 
       {/* 4. VIEW ORDER MODAL */}
       {selectedOrder && (
-         <DesktopViewOrderModal order={selectedOrder} onClose={() => setSelectedOrder(null)} />
+         <DesktopViewOrderModal order={selectedOrder} onClose={() => setSelectedOrder(null)} onDelete={handleDelete} />
       )}
     </div>
   );
 }
 
-function DesktopViewOrderModal({ order, onClose }: { order: Order, onClose: () => void }) {
-  const items = (order as any).items || [];
-  const createdAtRaw = (order as any).created_at || (order as any).createdAt;
-  const d = createdAtRaw ? new Date(createdAtRaw) : new Date();
-  const isVoid = order.status === 'VOIDED';
+function DesktopViewOrderModal({ order, onClose, onDelete }: { order: Order, onClose: () => void, onDelete: (e: React.MouseEvent, id: string) => void }) {
+  const items = (order as any)?.items || [];
+  const createdAtRaw = (order as any)?.created_at || (order as any)?.createdAt;
+  let d = createdAtRaw ? new Date(createdAtRaw) : new Date();
+  if (isNaN(d.getTime())) d = new Date();
+  const isVoid = order?.status === 'VOIDED';
 
   return (
     <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in" onClick={onClose}>
@@ -233,7 +275,7 @@ function DesktopViewOrderModal({ order, onClose }: { order: Order, onClose: () =
         <div className="flex items-center justify-between px-8 pt-8 pb-5 border-b border-border/40 bg-card/50">
           <div className="flex flex-col gap-1">
              <h2 className="text-2xl font-black text-foreground tracking-tight uppercase">
-               #{ ((order as any).invoice_number || (order as any).invoiceNumber || '').replace('INV-', '') }
+               #{ String((order as any).invoice_number || (order as any).invoiceNumber || '').replace('INV-', '') }
              </h2>
              <span className="text-xs font-bold text-muted-foreground flex items-center gap-2">
                 <Clock size={12} className="opacity-70" />
@@ -291,14 +333,20 @@ function DesktopViewOrderModal({ order, onClose }: { order: Order, onClose: () =
              </strong>
            </div>
            
-           {isVoid && (
+           {isVoid ? (
              <div className="mt-4 p-3 rounded-xl bg-destructive/10 text-destructive text-center text-xs font-black uppercase border border-destructive/20">
                 This transaction has been voided.
              </div>
+           ) : (
+             <button
+               onClick={(e) => onDelete(e, String(order.id || (order as any)._id))}
+               className="mt-4 w-full py-3 rounded-2xl bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground transition-all font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 border border-destructive/20"
+             >
+               <Trash2 size={16} strokeWidth={2.5} /> Void & Delete Transaction
+             </button>
            )}
         </div>
       </div>
     </div>
   )
 }
-

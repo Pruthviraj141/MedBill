@@ -20,8 +20,10 @@ export class ReceiptFormatter {
   // Format a 3-column item row safely
   private formatItemRow(name: string, qty: string, price: string): string {
     const qtyWidth = 4;
-    const priceWidth = 8;
-    const nameWidth = this.width - qtyWidth - priceWidth - 1; 
+    // FIX 6: widened from 8 → 9 to accommodate Rs.9999.99 (9 chars) without truncation.
+    // nameWidth reduced by 1 accordingly (19 → 18). Values > 9 chars are hard-sliced.
+    const priceWidth = 9;
+    const nameWidth = this.width - qtyWidth - priceWidth - 1;
 
     // Word wrap long item names
     let remainingName = name;
@@ -45,8 +47,9 @@ export class ReceiptFormatter {
     // First line includes Qty and Price
     const firstLineName = mainLines[0];
     const qtyStr = qty.padStart(qtyWidth);
-    const priceStr = price.padStart(priceWidth);
-    
+    // Hard-slice to guard against values exceeding the column width.
+    const priceStr = price.slice(-priceWidth).padStart(priceWidth);
+
     result += firstLineName.padEnd(nameWidth) + ' ' + qtyStr + priceStr + '\n';
 
     // Append subsequent wrapped name lines if any
@@ -81,7 +84,8 @@ export class ReceiptFormatter {
 
     // 3. Items Header
     const qtyPad = 4;
-    const pricePad = 8;
+    // FIX 6: mirror of formatItemRow column widths (8 → 9).
+    const pricePad = 9;
     const nameW = this.width - qtyPad - pricePad - 1;
     this.escpos.boldOn();
     this.escpos.textLine('ITEM'.padEnd(nameW) + ' ' + 'QTY'.padStart(qtyPad) + 'AMT'.padStart(pricePad));
