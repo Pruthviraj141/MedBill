@@ -77,7 +77,7 @@ export class ReceiptFormatter {
 
     // 2. Meta
     this.escpos.alignLeft();
-    this.escpos.textLine(`Invoice: #${this.doc.invoiceNumber}`);
+    // Removed Invoice # line as requested to clean up the layout
     this.escpos.textLine(`Date: ${this.doc.date}`);
     this.escpos.textLine(`Time: ${this.doc.time}`);
     this.drawSeparator();
@@ -123,6 +123,15 @@ export class ReceiptFormatter {
 
     // 6. Payment info
     this.escpos.textLine(`Payment: ${this.doc.paymentMethod}`);
+    this.escpos.textLine("");
+
+    // 7. Footer message
+    this.drawSeparator();
+    this.escpos.alignCenter();
+    this.escpos.boldOn();
+    this.escpos.textLine("*** Thank you :) :) ***");
+    this.escpos.boldOff();
+    this.escpos.textLine("Please visit again!");
     this.escpos.textLine("");
 
     return this.escpos;

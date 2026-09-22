@@ -5,6 +5,7 @@ import * as htmlToImage from "html-to-image";
 import jsPDF from "jspdf";
 import type { Order } from "../../types";
 import { formatMoney } from "../../utils/format";
+import qrAssetUrl from "../../assets/qr.png";
 
 // --- SVG Icons ---
 
@@ -170,13 +171,12 @@ const AnimatedTicketContent = React.forwardRef<HTMLDivElement, { order: Order }>
                   <DashedLine />
 
                   <div className="flex flex-col items-center pt-2 pb-2">
-                       <QRCode 
-                          value={displayId} 
-                          size={140}
-                          bgColor="transparent"
-                          fgColor="currentColor"
-                          className="text-foreground"
-                          level="Q"
+                       {/* Display the authentic UPI QR instead of the Order ID string */}
+                       <img 
+                          src={qrAssetUrl} 
+                          alt="UPI Payment QR" 
+                          // Apply a 140x140 square crop tracking from the top to hide the UPI ID text
+                          className="w-[140px] h-[140px] object-cover object-top rounded-md bg-white p-1 shadow-sm"
                        />
                       <p className="text-[10px] text-muted-foreground/70 tracking-[0.4em] uppercase font-bold mt-4 font-mono">
                           {shortId}

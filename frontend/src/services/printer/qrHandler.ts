@@ -1,5 +1,5 @@
 // We explicitly bind to the external repository root QR asset!
-import qrAssetUrl from '../../../../qr.jpg';
+import qrAssetUrl from '../../assets/qr.png';
 import { INITIAL_58MM_PROFILE } from './printerProfile';
 
 /**
@@ -51,15 +51,21 @@ export const loadAndEncodeQR = async (): Promise<{ buffer: Uint8Array; w: number
   try {
     const img = await loadImage(qrAssetUrl);
 
-    let drawWidth = img.width;
-    let drawHeight = img.height;
+    // To ensure the QR code scans flawlessly without any bottom text, 
+    // we force the crop to be a PERFECT SQUARE from the very top of the image.
+    // QR codes are inherently 1:1, so width = width covers just the QR matrix.
+    const sourceWidth = img.width;
+    const sourceHeight = img.width; // Force square crop
+
+    let drawWidth = sourceWidth;
+    let drawHeight = sourceHeight;
 
     // Scale down if it exceeds the maximum safe thermal width limit
     const maxPx = INITIAL_58MM_PROFILE.qrSizePx;
     if (drawWidth > maxPx) {
       const ratio = maxPx / drawWidth;
       drawWidth = maxPx;
-      drawHeight = drawHeight * ratio;
+      drawHeight = sourceHeight * ratio; // Remains 1:1
     }
 
     // Must be even/byte aligned for standard processing cleanly 
@@ -77,8 +83,12 @@ export const loadAndEncodeQR = async (): Promise<{ buffer: Uint8Array; w: number
     ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(0, 0, drawWidth, drawHeight);
 
-    // Draw and extract
-    ctx.drawImage(img, 0, 0, drawWidth, drawHeight);
+    // Draw and extract (only the perfect square portion to hide the text safely)
+    ctx.drawImage(
+      img, 
+      0, 0, sourceWidth, sourceHeight, // source exact square crop
+      0, 0, drawWidth, drawHeight      // destination boundaries
+    );
     const imageData = ctx.getImageData(0, 0, drawWidth, drawHeight);
 
     const monoBits = rgbaToMonochrome(imageData.data, drawWidth, drawHeight);
