@@ -111,6 +111,27 @@ const nativeImpl = {
     return (res.values || []).map((r: any) => ({ day: dayNames[r.dayIndex], revenue: r.revenue }));
   },
 
+  getMonthlyRevenue: async () => {
+    const db = await getDB();
+    const res = await db.query(
+      `SELECT strftime('%Y-%m', datetime(created_at, '+330 minutes')) as ym,
+              COUNT(id) as orders, COALESCE(SUM(total), 0) as revenue
+       FROM orders
+       WHERE status = 'COMPLETED'
+       GROUP BY ym
+       ORDER BY ym DESC`
+    );
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    return (res.values || []).map((r: any) => {
+      const [y, m] = String(r.ym || "1970-01").split("-").map(Number);
+      return {
+        label: `${monthNames[(m || 1) - 1]} ${y}`,
+        revenue: Number(r.revenue) || 0,
+        orders: Number(r.orders) || 0,
+      };
+    });
+  },
+
   getDailyMetrics: async (periodStr: string) => {
     let startUtc: string;
     let endUtc: string;
@@ -172,6 +193,42 @@ const webImpl = {
   getSalesSummary: async () => ({ revenue: 0, orders: 0, averageBill: 0 }),
   getPaymentMix: async () => ([]),
   getTopProducts: async () => ([]),
+
+  getMonthlyRevenue: async (): Promise<Array<{ label: string; revenue: number; orders: number }>> => {
+    try {
+      const data = await webApiClient.get('/reports/monthly');
+      const rows = data.months || data.monthly || data.rows || [];
+      if (Array.isArray(rows) && rows.length > 0) {
+        return rows.map((r: any) => ({
+          label: String(r.label || r.month || r.ym || ''),
+          revenue: Number(r.revenue ?? r.total ?? 0) || 0,
+          orders: Number(r.orders ?? r.count ?? 0) || 0,
+        }));
+      }
+    } catch {
+      // fall through to client-side grouping below
+    }
+    const data = await webApiClient.get('/orders');
+    const groups = new Map<string, { revenue: number; orders: number }>();
+    for (const o of data.orders || []) {
+      if ((o.status ?? 'COMPLETED') === 'VOIDED') continue;
+      const ts = o.createdAt || o.created_at;
+      const d = ts ? new Date(ts) : null;
+      if (!d || Number.isNaN(d.getTime())) continue;
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      const g = groups.get(key) ?? { revenue: 0, orders: 0 };
+      g.revenue += Number(o.grandTotal ?? o.total ?? 0) || 0;
+      g.orders += 1;
+      groups.set(key, g);
+    }
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    return [...groups.entries()]
+      .sort((a, b) => (a[0] < b[0] ? 1 : -1))
+      .map(([ym, g]) => {
+        const [y, m] = ym.split('-').map(Number);
+        return { label: `${monthNames[m - 1]} ${y}`, revenue: g.revenue, orders: g.orders };
+      });
+  },
 
   getDailyMetrics: async (periodStr: string) => {
     let endpoint = '/reports/today';

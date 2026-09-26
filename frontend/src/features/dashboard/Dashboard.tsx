@@ -4,6 +4,7 @@ import { useDashboard } from '../../hooks/useDashboard';
 import { useOrders } from '../../hooks/useOrders';
 import { formatMoney, formatTime } from '../../utils/format';
 import { getDensePeakHours, getDenseWeekdays, getValidPaymentsData, getDonutGradient, getTopProducts } from '../../utils/dashboardUtils';
+import { ExportPdfButton } from '../../components/ExportPdfButton';
 
 const periods = ['today', 'week', 'month'] as const;
 
@@ -65,8 +66,9 @@ export function Dashboard({ onGo }: { onGo: (view: string) => void }) {
             </button>
           ))}
         </div>
-        <button 
-          className="ml-3 p-[9px] bg-[#171615] dark:bg-[#131313] text-white/90 dark:text-[#EAD6C0] rounded-full border border-[#2B2B2B] active:scale-95 transition-all shadow-sm flex-none" 
+        <ExportPdfButton variant="mobile" period={period} report={report} />
+        <button
+          className="ml-3 p-[9px] bg-[#171615] dark:bg-[#131313] text-white/90 dark:text-[#EAD6C0] rounded-full border border-[#2B2B2B] active:scale-95 transition-all shadow-sm flex-none"
           onClick={async (e) => {
              e.stopPropagation();
              setIsRefreshing(true);
@@ -296,14 +298,22 @@ export function Dashboard({ onGo }: { onGo: (view: string) => void }) {
                ) : orders.slice(0, 5).map((order: any) => (
                 <div className="flex items-center justify-between gap-1" key={order.id || order._id}>
                   <div className="flex flex-col gap-0.5 overflow-hidden">
-                    <strong className="text-[11px] font-black text-foreground tracking-tight uppercase truncate">#{String(order.id || order._id).slice(-4)}</strong>
+                    <strong className="text-[11px] font-black text-foreground tracking-tight truncate">{
+                      (() => {
+                        const items = order.items || [];
+                        if (items.length === 0) return 'Order';
+                        const first = items[0];
+                        const label = `${first.quantity ?? 1} × ${first.name_snapshot ?? first.name ?? 'Item'}`;
+                        return items.length > 1 ? `${label} +${items.length - 1} more` : label;
+                      })()
+                    }</strong>
                     <span className="text-[9px] font-medium text-muted-foreground">{order.items.length} item{order.items.length !== 1 ? 's' : ''}</span>
                   </div>
                   <div className="flex flex-col items-end gap-0.5 flex-none">
                     <strong className="text-[11px] font-black tabular-nums">{formatMoney(order.grandTotal)}</strong>
                     <span className="text-[9px] font-medium text-muted-foreground">{formatTime(order.createdAt)}</span>
                   </div>
-                  <div className="flex-none bg-[#24412B]/90 text-[#7BB88C] px-1.5 py-0.5 rounded-[4px] text-[7px] font-extrabold uppercase uppercase">
+                  <div className="flex-none bg-black text-white px-1.5 py-0.5 rounded-[4px] text-[7px] font-extrabold uppercase">
                     Completed
                   </div>
                 </div>
