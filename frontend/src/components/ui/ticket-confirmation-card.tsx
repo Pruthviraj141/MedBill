@@ -3,8 +3,10 @@ import { cn } from "../../lib/utils";
 import QRCode from "react-qr-code";
 import * as htmlToImage from "html-to-image";
 import jsPDF from "jspdf";
-import type { Order } from "../../types";
+import type { Order, OrderItem } from "../../types";
+import { printerService } from "../../services/printer/printerService";
 import { formatMoney } from "../../utils/format";
+import qrAssetUrl from "../../assets/qr.png";
 
 // --- SVG Icons ---
 
@@ -170,13 +172,12 @@ const AnimatedTicketContent = React.forwardRef<HTMLDivElement, { order: Order }>
                   <DashedLine />
 
                   <div className="flex flex-col items-center pt-2 pb-2">
-                       <QRCode 
-                          value={displayId} 
-                          size={140}
-                          bgColor="transparent"
-                          fgColor="currentColor"
-                          className="text-foreground"
-                          level="Q"
+                       {/* Display the authentic UPI QR instead of the Order ID string */}
+                       <img 
+                          src={qrAssetUrl} 
+                          alt="UPI Payment QR" 
+                          // Apply a 140x140 square crop tracking from the top to hide the UPI ID text
+                          className="w-[140px] h-[140px] object-cover object-top rounded-md bg-white p-1 shadow-sm"
                        />
                       <p className="text-[10px] text-muted-foreground/70 tracking-[0.4em] uppercase font-bold mt-4 font-mono">
                           {shortId}
@@ -197,49 +198,22 @@ const AnimatedTicket = ({
   ...props
 }: TicketProps) => {
     const [showConfetti, setShowConfetti] = React.useState(false);
-    const [downloading, setDownloading] = React.useState(false);
     const ticketRef = React.useRef<HTMLDivElement>(null);
+    const [printing, setPrinting] = React.useState(false);
 
-    React.useEffect(() => {
-      const mountTimer = setTimeout(() => setShowConfetti(true), 100);
-      const unmountTimer = setTimeout(() => setShowConfetti(false), 5000);
-      return () => {
-        clearTimeout(mountTimer);
-        clearTimeout(unmountTimer);
-      };
-    }, []);
-
-    const handleDownloadPdf = async () => {
-        if (!ticketRef.current || downloading) return;
-        setDownloading(true);
+    const handlePrintReceipt = async () => {
+        if (printing) return;
+        setPrinting(true);
         try {
-            // Apply a small scale adjustment to ensure HD quality
-            const rect = ticketRef.current.getBoundingClientRect();
-            const width = rect.width;
-            const height = rect.height;
-
-            const imgData = await htmlToImage.toPng(ticketRef.current, {
-                pixelRatio: 2,
-                backgroundColor: 'transparent',
-                style: {
-                  transform: 'scale(1)',
-                  transformOrigin: 'top left'
-                }
-            });
-            
-            const pdf = new jsPDF({
-                orientation: "portrait",
-                unit: "px",
-                format: [width, height] 
-            });
-            
-            pdf.addImage(imgData, "PNG", 0, 0, width, height);
-            pdf.save(`TBT-Cafe-Receipt-${(order.id || order._id || "").slice(-6).toUpperCase()}.pdf`);
+            const success = await printerService.printOrder(order as Order, (order.items || []) as OrderItem[]);
+            if (!success) {
+                alert("Failed to print to receipt printer. Please check printer connection.");
+            }
         } catch (error) {
-            console.error("Failed to generate PDF", error);
-            alert("Failed to download PDF. Please try again.");
+            console.error("Print error:", error);
+            alert("Error sending print job.");
         } finally {
-            setDownloading(false);
+            setPrinting(false);
         }
     };
 
@@ -255,14 +229,16 @@ const AnimatedTicket = ({
         {/* Action Buttons */}
         <div className="w-full flex flex-col gap-3 mt-8 px-4 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300 fill-mode-both">
            <button 
-                onClick={handleDownloadPdf}
-                disabled={downloading}
-                className="w-full h-14 rounded-2xl flex items-center justify-center gap-2 bg-white dark:bg-[#1C1C1E] text-foreground font-bold shadow-sm border border-border/60 hover:bg-muted active:scale-[0.98] transition-all"
+                onClick={handlePrintReceipt}
+                disabled={printing}
+                className="w-full h-14 rounded-2xl flex items-center justify-center gap-2 bg-white dark:bg-[#1C1C1E] text-foreground font-bold shadow-[0_4px_16px_rgba(0,0,0,0.06)] dark:shadow-none border border-border/60 hover:bg-muted active:scale-[0.98] transition-all"
             >
-                {downloading ? "Generating PDF..." : (
+                {printing ? (
+                    <span className="flex items-center gap-2 animate-pulse">Printing Receipt...</span>
+                ) : (
                     <>
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
-                        Download / Print
+                        Print Receipt
                     </>
                 )}
             </button>
