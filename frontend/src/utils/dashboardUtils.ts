@@ -1,15 +1,16 @@
 // src/utils/dashboardUtils.ts
 
 /**
- * Creates dense arrays to cover 6AM - 11PM (18 hours) to match the dashboard matrix exactly.
+ * Creates dense arrays to cover all 24 hours (12 AM - 11 PM) dynamically.
  */
 export function getDensePeakHours(rawPeakHours: any[], period?: string, orders?: any[]) {
   // 1. Establish the dense array using backend data safely (fixing string-number mismatch directly)
-  const dense = Array.from({ length: 18 }, (_, k) => k + 6).map(hour => {
+  const dense = Array.from({ length: 24 }, (_, k) => k).map(hour => {
     const match = rawPeakHours.find((p: any) => Number(p.hour) === hour);
     return {
       hour,
-      orders: match ? Number(match.orders) : 0
+      orders: match ? Number(match.orders) : 0,
+      revenue: match ? Number(match.revenue) : 0
     };
   });
 
@@ -18,6 +19,7 @@ export function getDensePeakHours(rawPeakHours: any[], period?: string, orders?:
   // This guarantees real-time graph spikes for recent orders before cloud-sync occurs.
   if (period === 'today' && orders && orders.length > 0) {
     const localPeakHours = new Map<number, number>();
+    const localPeakRev = new Map<number, number>();
     const todayStr = new Date().toDateString();
     
     orders.forEach((order: any) => {
@@ -28,13 +30,18 @@ export function getDensePeakHours(rawPeakHours: any[], period?: string, orders?:
       
       const hour = date.getHours();
       localPeakHours.set(hour, (localPeakHours.get(hour) || 0) + 1);
+      
+      const orderRev = Number(order.grandTotal ?? order.total ?? 0) || 0;
+      localPeakRev.set(hour, (localPeakRev.get(hour) || 0) + orderRev);
     });
 
     return dense.map(d => {
       const activeLocalCount = localPeakHours.get(d.hour) || 0;
+      const activeLocalRev = localPeakRev.get(d.hour) || 0;
       return {
         ...d,
-        orders: Math.max(d.orders, activeLocalCount)
+        orders: Math.max(d.orders, activeLocalCount),
+        revenue: Math.max(d.revenue ?? 0, activeLocalRev)
       };
     });
   }

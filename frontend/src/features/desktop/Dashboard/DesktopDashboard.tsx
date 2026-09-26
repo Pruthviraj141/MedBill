@@ -36,7 +36,7 @@ export function DesktopDashboard({ onGo }: { onGo: (v: string) => void }) {
 
   // ZERO DUPLICATION: Re-using exact pure functions from the refactored dashboardUtils.ts
   const rawPeakHours = report?.peakHours ?? [];
-  const densePeakHours = getDensePeakHours(rawPeakHours);
+  const densePeakHours = getDensePeakHours(rawPeakHours, period, orders);
 
   const rawWeekdays = report?.weekdayPattern ?? [];
   const denseWeekdays = getDenseWeekdays(rawWeekdays);

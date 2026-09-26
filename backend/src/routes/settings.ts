@@ -40,3 +40,4 @@ settingsRouter.delete('/:key', async (c) => {
     return c.json({ success: false, error: err.message }, 500);
   }
 });
+

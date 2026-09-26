@@ -1,6 +1,7 @@
 name = "cafe-pos-api"
 main = "src/index.ts"
 compatibility_date = "2026-09-01"
+account_id = "03e08078149c7af42ad7b6255cb8d2bb"
 compatibility_flags = ["nodejs_compat", "no_handle_cross_request_promise_resolution"]
 
 [vars]

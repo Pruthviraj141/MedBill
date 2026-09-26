@@ -26,13 +26,8 @@ const checkServiceReady = (port, path = '/') => {
 };
 
 const startBrowser = () => {
-  console.log("Both services verified active. Launching Microsoft Edge...");
-  exec('start "" msedge "http://127.0.0.1:8080"', (err) => {
-    if (err) {
-      console.log("Could not find Edge. Falling back to default browser...");
-      exec('start "" "http://127.0.0.1:8080"');
-    }
-  });
+  console.log("Both services verified active. Launching Default Browser...");
+  exec('start "" "http://127.0.0.1:8080"');
 };
 
 Promise.all([

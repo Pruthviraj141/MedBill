@@ -11,6 +11,8 @@ build.log
 build2.log
 build_final.log
 
+*.zip
+
 # Node.js
 node_modules
 dist

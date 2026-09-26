@@ -14,7 +14,11 @@ const MIME_TYPES = {
   '.jpg': 'image/jpeg',
   '.jpeg': 'image/jpeg',
   '.svg': 'image/svg+xml',
+  '.woff': 'font/woff',
   '.woff2': 'font/woff2',
+  '.ttf': 'font/ttf',
+  '.webp': 'image/webp',
+  '.gif': 'image/gif',
   '.ico': 'image/x-icon'
 };
 
@@ -29,7 +33,7 @@ const server = http.createServer((req, res) => {
   let ext = path.extname(filePath).toLowerCase();
 
   // Simple SPA routing - if no extension, or if it isn't an asset, serve index.html
-  if (!ext || (ext !== '.js' && ext !== '.css' && ext !== '.html' && ext !== '.png' && ext !== '.jpg' && ext !== '.jpeg' && ext !== '.svg' && ext !== '.woff2' && ext !== '.ico')) {
+  if (!ext || !Object.keys(MIME_TYPES).includes(ext)) {
     filePath = path.join(PUBLIC_DIR, 'index.html');
     ext = '.html';
   }

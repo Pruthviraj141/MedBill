@@ -38,25 +38,14 @@ function hourLabel(hour: number): string {
 
 function buildBuckets(
   period: string,
-  densePeakHours: Array<{ hour: number; orders: number }>,
+  densePeakHours: Array<{ hour: number; orders: number; revenue?: number }>,
   denseWeekdays: Array<{ day: string; revenue: number }>,
   orders: any[]
 ): Bucket[] {
   if (period === "today") {
-    const todayStr = new Date().toDateString()
-    const revenueByHour = new Map<number, number>()
-    for (const o of orders ?? []) {
-      const ts = o.createdAt ?? o.created_at
-      if (!ts) continue
-      const d = new Date(ts)
-      if (Number.isNaN(d.getTime()) || d.toDateString() !== todayStr) continue
-      const h = d.getHours()
-      const total = Number(o.grandTotal ?? o.total ?? 0) || 0
-      revenueByHour.set(h, (revenueByHour.get(h) ?? 0) + total)
-    }
     return densePeakHours.map((pt) => ({
       label: hourLabel(pt.hour),
-      revenue: Math.round(revenueByHour.get(pt.hour) ?? 0),
+      revenue: Math.round(pt.revenue ?? 0),
       orders: Number(pt.orders) || 0,
     }))
   }
@@ -84,7 +73,7 @@ function buildBuckets(
 }
 
 const descriptions: Record<string, string> = {
-  today: "Hourly sales · 6 AM – 11 PM",
+  today: "Hourly sales · 24 Hours",
   week: "Sales by weekday · last 7 days",
   month: "Sales by weekday · last 30 days",
 }
@@ -96,7 +85,7 @@ export function ActivityTimelineChart({
   orders,
 }: {
   period: string
-  densePeakHours: Array<{ hour: number; orders: number }>
+  densePeakHours: Array<{ hour: number; orders: number; revenue?: number }>
   denseWeekdays: Array<{ day: string; revenue: number }>
   orders: any[]
 }) {
