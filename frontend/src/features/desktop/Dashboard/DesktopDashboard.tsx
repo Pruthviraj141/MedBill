@@ -4,6 +4,8 @@ import { useOrders } from '../../../hooks/useOrders';
 import { Loader2, TrendingUp, ShoppingBag, Clock, CreditCard, Banknote, Coffee, ArrowRight, BarChart3, Receipt, Sparkles, RefreshCw, X } from 'lucide-react';
 import { formatMoney, formatTime } from '../../../utils/format';
 import { getDensePeakHours, getDenseWeekdays, getValidPaymentsData, getDonutGradient, getTopProducts } from '../../../utils/dashboardUtils';
+import { ActivityTimelineChart } from './ActivityTimelineChart';
+import { ExportPdfButton } from '../../../components/ExportPdfButton';
 
 const periods = ['today', 'week', 'month'] as const;
 
@@ -43,7 +45,6 @@ export function DesktopDashboard({ onGo }: { onGo: (v: string) => void }) {
   const { validPaymentsTotal, upiPct, cashPct } = getValidPaymentsData(allPayments);
 
   const maxHourOrders = Math.max(...densePeakHours.map(h => h.orders), 1);
-  const maxWeekdayRevenue = Math.max(...denseWeekdays.map(d => d.revenue), 1);
 
   // Dynamic metrics for the Hero card
   const revenue = report?.revenue ?? 0;
@@ -95,7 +96,8 @@ export function DesktopDashboard({ onGo }: { onGo: (v: string) => void }) {
                </button>
              ))}
            </div>
-          <button 
+          <ExportPdfButton period={period} report={report} />
+          <button
             onClick={() => onGo('billing')}
             className="bg-primary/10 text-primary hover:bg-primary/20 px-6 py-3 rounded-2xl font-bold flex items-center gap-2 transition-all active:scale-95 border border-primary/20"
           >
@@ -152,63 +154,14 @@ export function DesktopDashboard({ onGo }: { onGo: (v: string) => void }) {
             </div>
           </div>
 
-          {/* HISTOGRAM CHART */}
-          <div className="desktop-card bg-card/60 backdrop-blur-md border border-border/80 px-8 py-6 shadow-sm" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-8">
-              <div className="flex items-center gap-2">
-                <BarChart3 size={20} className="text-primary dark:text-[#EAD6C0]" />
-                <h3 className="text-lg font-bold text-foreground">Activity Timeline</h3>
-              </div>
-            </div>
-
-            <div className="relative flex flex-col w-full h-[220px] pt-4 border-b border-border/40">
-               {/* Grid lines overlay */}
-               <div className="absolute inset-0 flex flex-col justify-between pt-4 pb-0 pointer-events-none z-0">
-                 <div className="w-full border-t border-border/40 border-dashed" />
-                 <div className="w-full border-t border-border/40 border-dashed" />
-                 <div className="w-full border-t border-border/40 border-dashed" />
-                 <div className="w-full border-t border-border/40 border-dashed" />
-               </div>
-               
-               <div className="absolute left-0 top-0 h-full flex flex-col justify-between py-1 px-2 text-xs font-bold text-muted-foreground z-10 w-16">
-                 <span>Max</span>
-                 <span>Avg</span>
-                 <span>Low</span>
-                 <span>0</span>
-               </div>
-
-               <div className="relative z-10 flex items-end justify-between ml-[72px] h-full px-2 gap-3">
-                 {(period === 'today' ? densePeakHours : denseWeekdays).map((pt: any, i: number) => {
-                    const max = period === 'today' ? maxHourOrders : maxWeekdayRevenue;
-                    const val = period === 'today' ? pt.orders : pt.revenue;
-                    const h = Math.max(2, (val / max) * 100);
-                    return (
-                      <div 
-                        key={i} 
-                        className="flex-1 bg-[#2C1809] dark:bg-[#C9956A] rounded-t-md hover:opacity-80 transition-all duration-700 ease-out cursor-pointer relative group" 
-                        style={{ height: `${h}%` }}
-                      >
-                         {/* Desktop Hover Tooltip */}
-                         <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-black text-white text-xs font-bold py-1 px-3 rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
-                            {val} {period === 'today' ? 'orders' : 'divrs'}
-                         </div>
-                      </div>
-                    );
-                 })}
-               </div>
-            </div>
-            
-            <div className="flex items-center justify-between ml-[72px] px-2 h-8 mt-2 text-xs font-bold text-muted-foreground relative">
-              {(period === 'today' ? densePeakHours : denseWeekdays).map((pt: any, i: number) => (
-                   <div key={i} className="flex-1 flex justify-center relative h-full pt-2">
-                     <span className="whitespace-nowrap text-center">
-                       {period === 'today' 
-                         ? (pt.hour % 2 === 0 ? `${pt.hour > 12 ? pt.hour-12 : (pt.hour===0?12:pt.hour)}${pt.hour >= 12 ? 'PM' : 'AM'}` : '') 
-                         : pt.day.slice(0,3)}
-                     </span>
-                   </div>
-              ))}
-            </div>
+          {/* ACTIVITY TIMELINE — interactive revenue / orders chart */}
+          <div onClick={(e) => e.stopPropagation()}>
+            <ActivityTimelineChart
+              period={period}
+              densePeakHours={densePeakHours}
+              denseWeekdays={denseWeekdays}
+              orders={orders}
+            />
           </div>
 
            {/* TOP PRODUCTS DESKTOP */}
@@ -327,8 +280,16 @@ export function DesktopDashboard({ onGo }: { onGo: (v: string) => void }) {
                ) : orders.slice(0, 5).map((order: any) => (
                 <div className="flex flex-col gap-2 p-3 bg-background/50 dark:bg-black/10 rounded-xl border border-border/40" key={order.id || order._id}>
                   <div className="flex items-center justify-between">
-                    <strong className="text-xs font-black text-foreground tracking-tight uppercase">#{String(order.id || order._id).slice(-6)}</strong>
-                    <div className="bg-[#24412B]/90 text-[#7BB88C] px-2 py-0.5 rounded text-[10px] font-black uppercase">
+                    <strong className="text-xs font-black text-foreground tracking-tight truncate">{
+                      (() => {
+                        const items = order.items || [];
+                        if (items.length === 0) return 'Order';
+                        const first = items[0];
+                        const label = `${first.quantity ?? 1} × ${first.name_snapshot ?? first.name ?? 'Item'}`;
+                        return items.length > 1 ? `${label} +${items.length - 1} more` : label;
+                      })()
+                    }</strong>
+                    <div className="bg-black text-white px-2 py-0.5 rounded text-[10px] font-black uppercase">
                       {order.status || 'Completed'}
                     </div>
                   </div>
