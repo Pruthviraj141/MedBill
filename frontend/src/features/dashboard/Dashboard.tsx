@@ -20,7 +20,7 @@ export function Dashboard({ onGo }: { onGo: (view: string) => void }) {
   const orders = ordersQuery.data?.orders ?? [];
   
   const rawPeakHours = report?.peakHours ?? [];
-  const densePeakHours = getDensePeakHours(rawPeakHours);
+  const densePeakHours = getDensePeakHours(rawPeakHours, period, orders);
 
   const rawWeekdays = report?.weekdayPattern ?? [];
   const denseWeekdays = getDenseWeekdays(rawWeekdays);
@@ -41,7 +41,8 @@ export function Dashboard({ onGo }: { onGo: (view: string) => void }) {
   const avgBill = report?.averageBill ?? 0;
 
   // Peak Hour logic with interactive touch state mapping
-  const globalPeak = rawPeakHours.length > 0 ? rawPeakHours.reduce((prev: any, current: any) => (prev.orders > current.orders) ? prev : current) : null;
+  const maxDenseRecord = densePeakHours.reduce((prev: any, current: any) => (prev.orders > current.orders) ? prev : current, { hour: 0, orders: -1 });
+  const globalPeak = maxDenseRecord.orders > 0 ? maxDenseRecord : null;
   const peak = activePeakHour !== null ? densePeakHours.find(h => h.hour === activePeakHour) : globalPeak;
   const peakHourStr = peak ? `${peak.hour > 12 ? peak.hour-12 : (peak.hour===0?12:peak.hour)} ${peak.hour >= 12 ? 'PM' : 'AM'}` : '--';
 

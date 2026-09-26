@@ -109,11 +109,13 @@ app.post('/print', (req, res) => {
 
   try {
     const buffer = Buffer.from(payload, 'base64');
+    
+    // Passively cache every print job for browser-based preview verification over 28080/preview
+    lastVirtualReceipt = parseESCPOS(buffer);
 
     // Virtual Mode Development Intercept
     if (process.env.PRINTER_MODE === 'virtual') {
-      lastVirtualReceipt = parseESCPOS(buffer);
-      console.log(`[VIRTUAL PRINTER] Rendered receipt cleanly (${buffer.length} bytes). Browse to /preview`);
+      console.log(`[VIRTUAL PRINTER] Rendered receipt cleanly (${buffer.length} bytes). Browse to http://127.0.0.1:28080/preview`);
       return res.status(200).send({
         success: true,
         message: 'PRINT SUCCESS — VIRTUAL PRINTER',
