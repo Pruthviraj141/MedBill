@@ -29,5 +29,16 @@ export const webApiClient = {
             throw new Error(`API POST Error: ${res.status} ${res.statusText}`);
         }
         return res.json();
+    },
+
+    delete: async (endpoint: string) => {
+        const url = `${getApiBaseUrl()}${endpoint}`;
+        const res = await fetch(url, {
+            method: 'DELETE'
+        });
+        if (!res.ok) {
+            throw new Error(`API DELETE Error: ${res.status} ${res.statusText}`);
+        }
+        return res.json();
     }
 };

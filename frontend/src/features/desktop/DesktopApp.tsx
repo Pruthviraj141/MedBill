@@ -7,6 +7,7 @@ const DesktopBilling = lazy(() => import('./Billing/DesktopBilling').then((modul
 const DesktopDashboard = lazy(() => import('./Dashboard/DesktopDashboard').then((module) => ({ default: module.DesktopDashboard })));
 const DesktopOrders = lazy(() => import('./Orders/DesktopOrders').then((module) => ({ default: module.DesktopOrders })));
 const DesktopSettings = lazy(() => import('./Settings/DesktopSettings').then((module) => ({ default: module.DesktopSettings })));
+const Products = lazy(() => import('../products/Products').then((module) => ({ default: module.Products })));
 
 interface DesktopAppProps {
   view: string;
@@ -57,7 +58,8 @@ export function DesktopApp({ view, setView, isOffline }: DesktopAppProps) {
           {view === 'billing' && <DesktopBilling />}
           {view === 'home' && <DesktopDashboard onGo={setView} />}
           {view === 'orders' && <DesktopOrders />}
-          {view === 'settings' && <DesktopSettings />}
+          {view === 'settings' && <DesktopSettings setView={setView} />}
+          {view === 'products' && <Products />}
         </Suspense>
       </main>
 
