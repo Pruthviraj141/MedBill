@@ -1,5 +1,6 @@
 import { Sun, Moon, Monitor, Printer, Info, RefreshCw, Receipt, Building2, Store, CreditCard } from 'lucide-react';
 import { useThemeStore, type Theme } from '../../stores/themeStore';
+import { Capacitor } from '@capacitor/core';
 
 const THEMES: { value: Theme; label: string; icon: React.ReactNode }[] = [
   { value: 'light', label: 'Light', icon: <Sun size={16} /> },
@@ -62,6 +63,21 @@ export function SettingsView() {
       </div>
 
       {/* ── System ─────────────────────────────────────────────────────── */}
+      {!Capacitor.isNativePlatform() && (
+        <>
+          <h2 style={{ fontSize: 13, fontWeight: 800, color: 'var(--bl-muted)', textTransform: 'uppercase', letterSpacing: 0.5, margin: '24px 0 10px 4px' }}>Menu Administration</h2>
+          <div 
+            className="bl-card hover:opacity-80 active:scale-95 transition-all" 
+            onClick={() => {
+              const productsTab = document.querySelector('button[aria-label="Products"]');
+              if (productsTab) (productsTab as HTMLElement).click();
+            }}
+          >
+            <SettingRow icon={<Store size={18} />} title="Menu Management" desc="Configure products, prices, and imagery" isLast={true} />
+          </div>
+        </>
+      )}
+
       <h2 style={{ fontSize: 13, fontWeight: 800, color: 'var(--bl-muted)', textTransform: 'uppercase', letterSpacing: 0.5, margin: '24px 0 10px 4px' }}>System</h2>
       
       <div className="bl-card" style={{ display: 'flex', flexDirection: 'column' }}>

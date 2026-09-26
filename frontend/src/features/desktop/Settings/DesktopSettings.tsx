@@ -1,11 +1,11 @@
 import React from 'react';
 import { useThemeStore } from '../../../stores/themeStore';
-import { Moon, Sun, Settings, Database, Cloud, Printer, RefreshCw } from 'lucide-react';
+import { Moon, Sun, Settings, Database, Cloud, Printer, RefreshCw, Store } from 'lucide-react';
 import { printerService } from '../../../services/printer/printerService';
 import { printQueue } from '../../../services/printer/printQueue';
 import { Order } from '../../../types';
 
-export function DesktopSettings() {
+export function DesktopSettings({ setView }: { setView?: (v: string) => void }) {
   const { theme, setTheme } = useThemeStore();
   const [failedCount, setFailedCount] = React.useState(printQueue.getFailedJobs().length);
   const [isPrinting, setIsPrinting] = React.useState(false);
@@ -51,13 +51,13 @@ export function DesktopSettings() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         
         {/* Appearance */}
-        <div className="desktop-card bg-card/60 backdrop-blur-md border border-border/50 p-8 shadow-sm">
+        <div className="desktop-card bg-card/60 backdrop-blur-md border border-border/50 p-8 shadow-sm text-foreground">
           <h3 className="text-lg font-black flex items-center gap-2 mb-6"><Sun size={20} className="text-primary"/> Appearance</h3>
           
           <div className="flex flex-col gap-4">
              <button
                onClick={() => setTheme('light')}
-               className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all ${theme === 'light' ? 'border-primary bg-primary/5' : 'border-border/50 hover:border-foreground/20'}`}
+               className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all text-foreground ${theme === 'light' ? 'border-primary bg-primary/5' : 'border-border/50 hover:border-foreground/20'}`}
              >
                <div className="flex items-center gap-3 font-bold">
                  <div className="w-10 h-10 rounded-full bg-orange-100 text-orange-500 flex items-center justify-center"><Sun size={20}/></div>
@@ -70,7 +70,7 @@ export function DesktopSettings() {
 
              <button
                onClick={() => setTheme('dark')}
-               className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all ${theme === 'dark' ? 'border-primary bg-primary/5' : 'border-border/50 hover:border-foreground/20'}`}
+               className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all text-foreground ${theme === 'dark' ? 'border-primary bg-primary/5' : 'border-border/50 hover:border-foreground/20'}`}
              >
                <div className="flex items-center gap-3 font-bold">
                  <div className="w-10 h-10 rounded-full bg-blue-900 text-blue-300 flex items-center justify-center"><Moon size={20}/></div>
@@ -84,7 +84,7 @@ export function DesktopSettings() {
         </div>
 
         {/* System info */}
-        <div className="desktop-card bg-card/60 backdrop-blur-md border border-border/50 p-8 shadow-sm">
+        <div className="desktop-card bg-card/60 backdrop-blur-md border border-border/50 p-8 shadow-sm text-foreground">
           <h3 className="text-lg font-black flex items-center gap-2 mb-6"><Settings size={20} className="text-primary"/> System Information</h3>
           
           <div className="space-y-6">
@@ -117,14 +117,14 @@ export function DesktopSettings() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8 pb-12">
         {/* Printer Configuration */}
-        <div className="desktop-card bg-card/60 backdrop-blur-md border border-border/50 p-8 shadow-sm">
+        <div className="desktop-card bg-card/60 backdrop-blur-md border border-border/50 p-8 shadow-sm text-foreground">
           <h3 className="text-lg font-black flex items-center gap-2 mb-6"><Printer size={20} className="text-primary"/> Printer Configuration</h3>
           
           <div className="space-y-4">
             <button
                onClick={handleTestPrint}
                disabled={isPrinting}
-               className="w-full flex items-center justify-between p-4 rounded-xl border-2 border-border/50 hover:border-foreground/20 transition-all font-bold disabled:opacity-50"
+               className="w-full flex items-center justify-between p-4 rounded-xl border-2 border-border/50 hover:border-foreground/20 transition-all font-bold text-foreground disabled:opacity-50"
              >
                Test Thermal Connection
                <Printer size={18} className="text-muted-foreground" />
@@ -132,10 +132,25 @@ export function DesktopSettings() {
             <button
                onClick={handleRetryJobs}
                disabled={isPrinting || failedCount === 0}
-               className="w-full flex items-center justify-between p-4 rounded-xl border-2 border-border/50 hover:border-foreground/20 transition-all font-bold disabled:opacity-50"
+               className="w-full flex items-center justify-between p-4 rounded-xl border-2 border-border/50 hover:border-foreground/20 transition-all font-bold text-foreground disabled:opacity-50"
              >
                Retry Failed Prints ({failedCount})
                <RefreshCw size={18} className={`text-muted-foreground ${isPrinting ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
+        </div>
+
+        {/* Admin Configuration */}
+        <div className="desktop-card bg-card/60 backdrop-blur-md border border-border/50 p-8 shadow-sm text-foreground">
+          <h3 className="text-lg font-black flex items-center gap-2 mb-6"><Store size={20} className="text-primary"/> Store Administration</h3>
+          
+          <div className="space-y-4">
+            <button
+               onClick={() => setView?.('products')}
+               className="w-full flex items-center justify-between p-4 rounded-xl border-2 border-primary/30 bg-primary/5 hover:border-primary/60 transition-all font-bold text-foreground"
+             >
+               Manage Cloudinary Menu
+               <Store size={18} className="text-primary" />
             </button>
           </div>
         </div>

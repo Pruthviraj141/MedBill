@@ -7,6 +7,15 @@ import { webApiClient } from '../../lib/webApiClient';
 // NATIVE IMPLEMENTATION
 // ----------------------------------------------------------------------
 const nativeImpl = {
+  getAllSettings: async (): Promise<Record<string, string>> => {
+    const db = await getDB();
+    const res = await db.query(`SELECT key, value FROM settings`);
+    const settings: Record<string, string> = {};
+    for (const row of res.values || []) {
+      settings[row.key] = row.value;
+    }
+    return settings;
+  },
   getSetting: async (key: string): Promise<string | null> => {
     const db = await getDB();
     const res = await db.query(`SELECT value FROM settings WHERE key = ?`, [key]);
@@ -28,6 +37,10 @@ const nativeImpl = {
 // WEB IMPLEMENTATION
 // ----------------------------------------------------------------------
 const webImpl = {
+  getAllSettings: async (): Promise<Record<string, string>> => {
+    const data = await webApiClient.get('/settings');
+    return data.settings || {};
+  },
   getSetting: async (key: string): Promise<string | null> => {
     const data = await webApiClient.get('/settings');
     const settings = data.settings || {};
@@ -39,9 +52,7 @@ const webImpl = {
   },
 
   removeSetting: async (key: string) => {
-    // In our backend API, there isn't an explicit DELETE endpoint for settings yet.
-    // For now we set it to empty assuming standard un-setting pattern for D1 sync
-    await webApiClient.post('/settings', { [key]: '' });
+    await webApiClient.delete(`/settings/${encodeURIComponent(key)}`);
   }
 };
 

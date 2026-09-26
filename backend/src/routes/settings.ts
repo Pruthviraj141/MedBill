@@ -30,3 +30,13 @@ settingsRouter.post('/', async (c) => {
      return c.json({ success: false, error: err.message }, 500);
   }
 });
+
+settingsRouter.delete('/:key', async (c) => {
+  try {
+    const key = c.req.param('key');
+    await c.env.DB.prepare('DELETE FROM settings WHERE key = ?').bind(key).run();
+    return c.json({ success: true });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message }, 500);
+  }
+});

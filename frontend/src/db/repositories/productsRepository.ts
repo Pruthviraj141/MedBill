@@ -45,14 +45,19 @@ const nativeImpl = {
     );
   },
 
-  addProduct: async (p: { name: string, categoryId: string, price: number, active: boolean }) => {
+  addProduct: async (p: { name: string, categoryId: string, price: number, active: boolean, image_url?: string }) => {
     const db = await getDB();
     const id = generateId();
     await db.run(
-      `INSERT INTO products (id, name, price, category, active, updated_at) 
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [id, p.name, p.price, p.categoryId, p.active ? 1 : 0, new Date().toISOString()]
+      `INSERT INTO products (id, name, price, category, image_url, active, updated_at) 
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [id, p.name, p.price, p.categoryId, p.image_url || null, p.active ? 1 : 0, new Date().toISOString()]
     );
+  },
+
+  deleteProduct: async (id: string) => {
+    const db = await getDB();
+    await db.run(`DELETE FROM products WHERE id = ?`, [id]);
   }
 };
 
@@ -101,8 +106,25 @@ const webImpl = {
     );
   },
   
-  upsertProduct: async (p: Product) => { /* Read-only fallback mock */ },
-  addProduct: async (p: any) => { /* Read-only fallback mock */ }
+  upsertProduct: async (p: Product) => {
+    await webApiClient.post('/products', p);
+  },
+  addProduct: async (p: { name: string, categoryId: string, price: number, active: boolean, image_url?: string }) => {
+    const id = generateId();
+    await webApiClient.post('/products', {
+      id,
+      name: p.name,
+      price: p.price,
+      category: p.categoryId,
+      image_url: p.image_url || null,
+      active: p.active,
+      updated_at: new Date().toISOString()
+    });
+  },
+
+  deleteProduct: async (id: string) => {
+    await webApiClient.delete(`/products/${id}`);
+  }
 };
 
 export const productsRepository = Capacitor.isNativePlatform() ? nativeImpl : webImpl;
