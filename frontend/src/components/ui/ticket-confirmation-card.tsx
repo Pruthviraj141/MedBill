@@ -89,7 +89,7 @@ const AnimatedTicketContent = React.forwardRef<HTMLDivElement, { order: Order }>
   ({ order }, ref) => {
     
     // Fallback ID
-    const displayId = (order.id || order._id || "TBT-001");
+    const displayId = (order.id || order._id || "MB-001");
     const shortId = displayId.slice(-6).toUpperCase();
     
     // Format Date
@@ -120,8 +120,8 @@ const AnimatedTicketContent = React.forwardRef<HTMLDivElement, { order: Order }>
           <div className="absolute -right-4 top-[50%] -translate-y-1/2 w-8 h-8 rounded-full bg-background border-l border-border/30 shadow-inner z-20" />
 
           {/* Top Brand Banner */}
-          <div className="bg-[#513217] pt-8 pb-10 flex flex-col items-center">
-            <h1 className="text-3xl font-black text-[#EAD6C0] tracking-tighter">TBT CAFE</h1>
+          <div className="bg-[#1e3a2f] pt-8 pb-10 flex flex-col items-center">
+            <h1 className="text-3xl font-black text-[#d1fae5] tracking-tighter">MEDBILL PHARMACY</h1>
           </div>
 
           <div className="bg-card w-full -mt-6 rounded-t-3xl pt-2 flex flex-col relative before:absolute before:inset-0 before:bg-white/5">
@@ -168,6 +168,28 @@ const AnimatedTicketContent = React.forwardRef<HTMLDivElement, { order: Order }>
                           {paymentLabel === 'UPI' ? '📱' : '💵'}
                       </div>
                   </div>
+
+                  {order.items && order.items.length > 0 && (
+                    <div className="space-y-2 pt-1 text-left">
+                      <div className="flex items-center justify-between">
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Medicines & Dosage</p>
+                        <span className="text-[9px] text-sky-600 dark:text-sky-400 font-semibold">(M - A - N)</span>
+                      </div>
+                      <div className="space-y-1.5 max-h-36 overflow-y-auto no-scrollbar">
+                        {order.items.map((it, idx) => (
+                          <div key={idx} className="flex items-center justify-between py-1.5 px-2.5 rounded-lg bg-muted/30 border border-border/30 text-xs">
+                            <div className="flex flex-col min-w-0 pr-2">
+                              <span className="font-bold text-foreground truncate">{it.name} <span className="text-muted-foreground font-normal">x{it.quantity}</span></span>
+                              <span className="text-[10px] text-muted-foreground">M: Morn | A: Aft | N: Night</span>
+                            </div>
+                            <span className="px-2 py-0.5 rounded font-mono font-black text-[12px] bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800 shrink-0">
+                              {it.dosageSchedule || '0-0-0'}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   <DashedLine />
 
@@ -242,9 +264,18 @@ const AnimatedTicket = ({
                     </>
                 )}
             </button>
+            <a
+              href="http://127.0.0.1:28080/preview"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full h-11 rounded-2xl flex items-center justify-center gap-2 bg-sky-50 dark:bg-slate-800 text-sky-700 dark:text-sky-300 font-bold text-xs border border-sky-200 dark:border-slate-700 hover:bg-sky-100 active:scale-[0.98] transition-all"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+              View 58mm Thermal Preview (127.0.0.1:28080/preview)
+            </a>
             <button 
                 onClick={onNewBill}
-                className="w-full h-14 rounded-2xl bg-gradient-to-br from-[#3E2009] to-[#603513] text-white text-[15px] font-black shadow-lg hover:shadow-xl active:scale-[0.98] transition-all tracking-wide"
+                className="w-full h-14 rounded-2xl bg-gradient-to-br from-[#0284c7] to-[#0369a1] text-white text-[15px] font-black shadow-lg hover:shadow-xl active:scale-[0.98] transition-all tracking-wide"
             >
                 START NEW BILL
             </button>
