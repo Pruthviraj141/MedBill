@@ -29,7 +29,7 @@ export const runDiagnostics = async () => {
     // 3. Product insert/read works
     const testProd: Product = {
       id: "diag-prod-1",
-      name: "Diag Coffee",
+      name: "Diag Medicine",
       price: 150,
       category: "Beverages",
       image_url: null,
