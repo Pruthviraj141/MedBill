@@ -7,12 +7,28 @@ import os from 'os';
 const app = express();
 const PORT = 28080;
 
-// Allow all local dev origins (localhost, 127.0.0.1, LAN IP, any port)
+// Explicitly allow all origins, local loopbacks, and Chrome Private Network Access preflights
+app.use((req, res, next) => {
+  const origin = req.headers.origin || '*';
+  res.header('Access-Control-Allow-Origin', origin);
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('Access-Control-Allow-Private-Network', 'true');
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  next();
+});
+
 app.use(cors({
   origin: true,
   credentials: true
 }));
 app.use(express.json({ limit: '10mb' }));
+
+// Health check endpoint for connection verification
+app.get('/health', (req, res) => res.json({ status: 'ok', agent: 'usb-print-agent', port: PORT }));
 
 let lastVirtualReceipt = `<html><head><title>Virtual Receipt Preview</title><style>
   body { background: #e2e8f0; display: flex; justify-content: center; padding: 24px; font-family: monospace; }
