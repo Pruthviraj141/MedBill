@@ -9,11 +9,10 @@ ordersRouter.get('/', async (c) => {
     
     if (results.length === 0) return c.json({ orders: [] });
 
-    // Safe: join order_items via a subquery using the already-returned IDs.
-    // D1 does not support array binding; we use a JOIN on the orders query directly.
+    // Safe & performant: join order_items only for the 100 retrieved orders, preventing full-table scans.
     const { results: itemsResults } = await c.env.DB.prepare(
       `SELECT oi.* FROM order_items oi
-       INNER JOIN orders o ON o.id = oi.order_id
+       WHERE oi.order_id IN (SELECT id FROM orders ORDER BY created_at DESC LIMIT 100)
        ORDER BY oi.order_id`
     ).all();
     

@@ -1,7 +1,8 @@
 import { jwt } from 'hono/jwt';
-import type { Role } from '../models/types';
 import type { Context, Next } from 'hono';
 import { startTime, endTime } from 'hono/timing';
+
+export type Role = 'ADMIN' | 'CASHIER' | 'MANAGER' | string;
 
 export const authMiddleware = () => {
   return async (c: Context, next: Next) => {

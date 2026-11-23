@@ -91,11 +91,14 @@ syncRouter.get('/orders', async (c) => {
 
   if (!orders || orders.length === 0) return c.json({ orders: [] });
 
-  // Safe JOIN: fetch matching items in one query without string interpolation.
+  // Safe & bounded JOIN: fetch matching items strictly for the 200 returned orders.
   const { results: items } = await c.env.DB.prepare(
     `SELECT oi.* FROM order_items oi
-     INNER JOIN orders o ON o.id = oi.order_id
-     WHERE o.created_at > ? OR (o.voided_at IS NOT NULL AND o.voided_at > ?)`
+     WHERE oi.order_id IN (
+       SELECT id FROM orders 
+       WHERE created_at > ? OR (voided_at IS NOT NULL AND voided_at > ?) 
+       ORDER BY created_at ASC LIMIT 200
+     )`
   ).bind(lastSync, lastSync).all();
 
   const formattedOrders = orders.map(o => {
