@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS orders (
 );
 CREATE INDEX IF NOT EXISTS idx_orders_status_created_at ON orders (status, created_at);
 CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders (created_at);
+CREATE INDEX IF NOT EXISTS idx_orders_status_created_total ON orders (status, created_at, total, payment_method);
 
 CREATE TABLE IF NOT EXISTS order_items (
   id TEXT PRIMARY KEY,
@@ -33,6 +34,7 @@ CREATE TABLE IF NOT EXISTS order_items (
   FOREIGN KEY(order_id) REFERENCES orders(id)
 );
 CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items (order_id);
+CREATE INDEX IF NOT EXISTS idx_order_items_covering ON order_items (order_id, product_id, quantity, line_total);
 
 CREATE TABLE IF NOT EXISTS settings (
   key TEXT PRIMARY KEY,
