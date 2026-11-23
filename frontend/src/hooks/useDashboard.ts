@@ -8,6 +8,8 @@ export function useDashboard(period = 'today') {
       const data = await dashboardRepository.getDailyMetrics(period);
       return data;
     },
-    staleTime: 0,
+    staleTime: 30_000, // Keep data fresh for 30 seconds to prevent unnecessary background refetches
+    gcTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 }

@@ -90,8 +90,8 @@ export function getValidPaymentsData(allPayments: any[]) {
  */
 export function getDonutGradient(validPaymentsTotal: number, upiPct: number, cashPct: number) {
   return validPaymentsTotal > 0 
-    ? `conic-gradient(from 0deg, #EAD6C0 0% ${upiPct}%, #8A5A33 ${upiPct}% ${upiPct + cashPct}%, transparent 100%)`
-    : `conic-gradient(#513217 0% 100%)`;
+    ? `conic-gradient(from 0deg, #38bdf8 0% ${upiPct}%, #0284c7 ${upiPct}% ${upiPct + cashPct}%, transparent 100%)`
+    : `conic-gradient(#0369a1 0% 100%)`;
 }
 
 /**

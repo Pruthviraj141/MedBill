@@ -132,6 +132,18 @@ const nativeImpl = {
     });
   },
 
+  getRecentOrders: async (limit = 5) => {
+    const db = await getDB();
+    const res = await db.query(
+      `SELECT id, invoice_number as invoiceNumber, status, total as grandTotal, payment_method as paymentMethod, created_at as createdAt
+       FROM orders
+       ORDER BY created_at DESC
+       LIMIT ?`,
+      [limit]
+    );
+    return res.values || [];
+  },
+
   getDailyMetrics: async (periodStr: string) => {
     let startUtc: string;
     let endUtc: string;
@@ -162,12 +174,13 @@ const nativeImpl = {
       endUtc = range.endUtc;
     }
 
-    const [summary, paymentBreakdown, topProducts, peakHours, weekdayPattern] = await Promise.all([
+    const [summary, paymentBreakdown, topProducts, peakHours, weekdayPattern, recentOrders] = await Promise.all([
       nativeImpl.getSalesSummary(startUtc, endUtc),
       nativeImpl.getPaymentMix(startUtc, endUtc),
       nativeImpl.getTopProducts(startUtc, endUtc, 10),
       nativeImpl.getPeakHours(startUtc, endUtc),
-      nativeImpl.getWeekdayPattern(startUtc, endUtc)
+      nativeImpl.getWeekdayPattern(startUtc, endUtc),
+      nativeImpl.getRecentOrders(5)
     ]);
 
     const globalPeak = peakHours.length > 0 ? peakHours.reduce((prev, curr) => (prev.orders > curr.orders ? prev : curr)) : null;
@@ -181,7 +194,8 @@ const nativeImpl = {
       peakHour: globalPeak ? `${globalPeak.hour > 12 ? globalPeak.hour - 12 : (globalPeak.hour === 0 ? 12 : globalPeak.hour)} ${globalPeak.hour >= 12 ? 'PM' : 'AM'}` : null,
       peakHours: peakHours,
       weekdayPattern: weekdayPattern,
-      hourlyActivity: peakHours
+      hourlyActivity: peakHours,
+      recentOrders: recentOrders || []
     };
   }
 };
@@ -236,24 +250,135 @@ const webImpl = {
     if (periodStr === 'month' || periodStr === '30d') endpoint = '/reports/month';
     if (periodStr === 'all' || periodStr === 'lifetime') endpoint = '/reports/all';
 
-    // Pass tz_offset_minutes so the backend computes the correct IST day boundary
-    const data = await webApiClient.get(`${endpoint}?tz_offset_minutes=${IST_OFFSET_MINUTES}`);
+    try {
+      // Pass tz_offset_minutes so the backend computes the correct IST day boundary
+      const data = await webApiClient.get(`${endpoint}?tz_offset_minutes=${IST_OFFSET_MINUTES}`);
 
-    return {
-      revenue: data.revenue || 0,
-      orders: data.orders || 0,
-      averageBill: data.averageBill || 0,
-      paymentBreakdown: data.paymentBreakdown || [],
-      topProducts: (data.topProducts || []).map((p: any) => ({ name: p.name, sold: p.sold, revenue: p.revenue })),
-      peakHour: data.peakHour || null,
-      peakHours: data.peakHours || [],
-      weekdayPattern: (data.weekdayPattern || []).map((w: any) => ({
-        ...w,
-        day: w.day ? w.day.slice(0, 3) : 'Unknown'
-      })),
-      hourlyActivity: data.peakHours || []
-    };
+      return {
+        revenue: data.revenue || 0,
+        orders: data.orders || 0,
+        averageBill: data.averageBill || 0,
+        paymentBreakdown: data.paymentBreakdown || [],
+        topProducts: (data.topProducts || []).map((p: any) => ({ name: p.name, sold: p.sold, revenue: p.revenue })),
+        peakHour: data.peakHour || null,
+        peakHours: data.peakHours || [],
+        weekdayPattern: (data.weekdayPattern || []).map((w: any) => ({
+          ...w,
+          day: w.day ? w.day.slice(0, 3) : 'Unknown'
+        })),
+        hourlyActivity: data.peakHours || [],
+        recentOrders: data.recentOrders || []
+      };
+    } catch {
+      // Offline fallback: calculate metrics instantly from local localStorage orders
+      return getLocalDashboardMetrics(periodStr);
+    }
   }
 };
+
+function getLocalDashboardMetrics(periodStr: string) {
+  try {
+    let localOrders: any[] = [];
+    const webOrdersRaw = localStorage.getItem('medbill_web_orders');
+    if (webOrdersRaw) {
+      const parsed = JSON.parse(webOrdersRaw);
+      const ordersList = Array.isArray(parsed) ? parsed : (parsed.orders || []);
+      const details = parsed.details || {};
+      localOrders = ordersList.map((o: any) => {
+        const itemData = details[o.id]?.items || o.items || [];
+        return {
+          ...o,
+          items: itemData
+        };
+      });
+    } else {
+      const raw = localStorage.getItem('pos_orders_v1');
+      localOrders = raw ? JSON.parse(raw) : [];
+    }
+
+    const validOrders = localOrders.filter(o => o.status !== 'VOIDED');
+    
+    const now = Date.now();
+    const dayMs = 24 * 60 * 60 * 1000;
+    const filteredOrders = validOrders.filter(o => {
+      if (periodStr === 'all' || periodStr === 'lifetime') return true;
+      const t = new Date(o.createdAt || o.created_at || now).getTime();
+      const age = now - t;
+      if (periodStr === 'today') return age <= dayMs;
+      if (periodStr === 'week' || periodStr === '7d') return age <= 7 * dayMs;
+      if (periodStr === 'month' || periodStr === '30d') return age <= 30 * dayMs;
+      return true;
+    });
+
+    const ordersCount = filteredOrders.length;
+    const revenue = filteredOrders.reduce((sum, o) => sum + (Number(o.grandTotal || o.total || 0)), 0);
+    const averageBill = ordersCount > 0 ? Math.round(revenue / ordersCount) : 0;
+
+    const paymentMap: Record<string, number> = { CASH: 0, UPI: 0 };
+    const productMap = new Map<string, { sold: number; revenue: number }>();
+    const hoursCount = new Array(24).fill(0);
+
+    for (const o of filteredOrders) {
+      const pm = (o.paymentMethod || o.payment_method || 'CASH').toUpperCase();
+      paymentMap[pm] = (paymentMap[pm] || 0) + Number(o.grandTotal || o.total || 0);
+
+      const d = new Date(o.createdAt || o.created_at || now);
+      const hr = d.getHours();
+      hoursCount[hr] = (hoursCount[hr] || 0) + 1;
+
+      for (const item of o.items || []) {
+        const name = item.name || item.name_snapshot || 'Item';
+        const qty = Number(item.quantity || 1);
+        const itemTotal = Number(item.total || item.line_total || (item.unitPrice || 0) * qty);
+        const curr = productMap.get(name) || { sold: 0, revenue: 0 };
+        curr.sold += qty;
+        curr.revenue += itemTotal;
+        productMap.set(name, curr);
+      }
+    }
+
+    const topProducts = Array.from(productMap.entries())
+      .map(([name, data]) => ({ name, sold: data.sold, revenue: data.revenue }))
+      .sort((a, b) => b.sold - a.sold)
+      .slice(0, 10);
+
+    const peakHours = hoursCount.map((orders, hour) => ({ hour, orders, revenue: 0 }));
+    const maxHour = peakHours.reduce((prev, curr) => (curr.orders > prev.orders ? curr : prev), { hour: 0, orders: 0, revenue: 0 });
+
+    const paymentBreakdown = [
+      { method: 'CASH', amount: paymentMap['CASH'] || 0 },
+      { method: 'UPI', amount: paymentMap['UPI'] || 0 }
+    ];
+
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const weekdayPattern = dayNames.map(day => ({ day, orders: 0, revenue: 0 }));
+
+    return {
+      revenue,
+      orders: ordersCount,
+      averageBill,
+      paymentBreakdown,
+      topProducts,
+      peakHour: maxHour.orders > 0 ? `${maxHour.hour}:00` : null,
+      peakHours,
+      weekdayPattern,
+      hourlyActivity: peakHours,
+      recentOrders: filteredOrders.slice(0, 5)
+    };
+  } catch {
+    return {
+      revenue: 0,
+      orders: 0,
+      averageBill: 0,
+      paymentBreakdown: [],
+      topProducts: [],
+      peakHour: null,
+      peakHours: [],
+      weekdayPattern: [],
+      hourlyActivity: [],
+      recentOrders: []
+    };
+  }
+}
 
 export const dashboardRepository = Capacitor.isNativePlatform() ? nativeImpl : webImpl;
