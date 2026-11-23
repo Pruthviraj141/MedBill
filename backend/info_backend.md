@@ -4,7 +4,7 @@ This directory contains the API backend for the Cafe POS application.
 
 ## Tech Stack
 - **Framework**: Hono with Node and Cloudflare Workers
-- **Database**: Cloudflare D1 Serverless Database (tbt-cafe-prod)
+- **Database**: Cloudflare D1 Serverless Database (medical-pos-db)
 - **Validation**: Zod
 - **Language**: TypeScript
 

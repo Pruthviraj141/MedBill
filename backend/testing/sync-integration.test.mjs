@@ -8,7 +8,7 @@
  * Run: node backend/testing/sync-integration.test.mjs
  */
 
-const BASE_URL = 'https://cafe-pos-api.pruthvigavhane.workers.dev/api';
+const BASE_URL = 'http://localhost:8787/api';
 const TEST_PREFIX = 'TEST_SYNC_';
 
 function log(label, data) {
@@ -135,7 +135,7 @@ async function runTests() {
   // Leaving test records with TEST_SYNC_ prefix — they are clearly identifiable.
   // They will not affect real cafe dashboard queries since invoice prefix differs.
   console.log('Note: Test records with invoice prefix TEST_SYNC_ remain in D1.');
-  console.log('They can be cleaned up via: wrangler d1 execute tbt-cafe-prod --remote --command "DELETE FROM orders WHERE invoice_number LIKE \'TEST_SYNC_%\'"');
+  console.log('They can be cleaned up via: wrangler d1 execute medical-pos-db --remote --command "DELETE FROM orders WHERE invoice_number LIKE \'TEST_SYNC_%\'"');
 
   // ── Summary ──
   console.log('\n═══════════════════════════════════');

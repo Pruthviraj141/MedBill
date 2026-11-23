@@ -60,7 +60,8 @@ function getUtcStartForPeriod(tzOffsetMinutes: number, period: string): string {
 const getReportForPeriod = async (c: any, period: string) => {
   try {
     // Accept tz_offset_minutes from query, default to 330 (IST = UTC+5:30)
-    const tzOffsetMinutes = parseInt(c.req.query('tz_offset_minutes') || '330', 10);
+    const rawTz = parseInt(c.req.query('tz_offset_minutes') || '330', 10);
+    const tzOffsetMinutes = Number.isFinite(rawTz) ? rawTz : 330;
     const sinceUtc = getUtcStartForPeriod(tzOffsetMinutes, period);
 
     // 1. Basic Stats — COMPLETED orders since sinceUtc
@@ -82,7 +83,7 @@ const getReportForPeriod = async (c: any, period: string) => {
       GROUP BY payment_method
     `).bind(sinceUtc);
 
-    // 3. Top Products
+    // 3. Top Products (bounded to top 10 for fast transfer)
     const q3 = c.env.DB.prepare(`
       SELECT oi.name_snapshot as name, COALESCE(SUM(oi.quantity), 0) as sold, COALESCE(SUM(oi.line_total), 0) as revenue
       FROM order_items oi
@@ -90,6 +91,7 @@ const getReportForPeriod = async (c: any, period: string) => {
       WHERE o.status = 'COMPLETED' AND o.created_at >= ?
       GROUP BY oi.product_id, oi.name_snapshot
       ORDER BY sold DESC
+      LIMIT 10
     `).bind(sinceUtc);
 
     // 4. Peak Hours (stored as UTC; for meaningful reporting, shift by tz offset)
@@ -116,13 +118,22 @@ const getReportForPeriod = async (c: any, period: string) => {
       ORDER BY dayNum ASC
     `).bind(sinceUtc);
 
-    const batchResults = await c.env.DB.batch([q1, q2, q3, q4, q5]);
+    // 6. Recent Orders (limit 5 for instant dashboard display without extra network calls)
+    const q6 = c.env.DB.prepare(`
+      SELECT id, invoice_number as invoiceNumber, status, total as grandTotal, payment_method as paymentMethod, created_at as createdAt
+      FROM orders
+      ORDER BY created_at DESC
+      LIMIT 5
+    `);
+
+    const batchResults = await c.env.DB.batch([q1, q2, q3, q4, q5, q6]);
 
     const statsQuery = batchResults[0].results[0] || { totalOrders: 0, totalRevenue: 0, averageBill: 0 };
     const payments = batchResults[1].results;
     const topProducts = batchResults[2].results;
     const peakHours = batchResults[3].results;
     const weekdayPattern = batchResults[4].results;
+    const recentOrders = batchResults[5].results;
     
     const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     const mappedWeekdays = weekdayPattern.map((r: any) => ({
@@ -142,6 +153,7 @@ const getReportForPeriod = async (c: any, period: string) => {
       paymentBreakdown: payments,
       peakHours,
       weekdayPattern: mappedWeekdays,
+      recentOrders: recentOrders || [],
       // Diagnostic: expose the UTC boundary used, so frontend can verify
       _debug: { period, sinceUtc, tzOffsetMinutes }
     });

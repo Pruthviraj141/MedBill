@@ -2,152 +2,113 @@ import { execSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 
-// Extracted exactly from old seed.ts
+// Top 10 Indian retail medicines
 const products = [
-  // PIZZA 🍕
-  { name: 'Margarita Pizza', category: 'Pizza', price: 100, icon: '/icons/pizza.png', active: true },
-  { name: 'Corn Cheese Pizza', category: 'Pizza', price: 110, icon: '/icons/pizza.png', active: true },
-  { name: 'Farmhouse Pizza', category: 'Pizza', price: 170, icon: '/icons/pizza.png', active: true },
-  { name: 'Paneer Pizza', category: 'Pizza', price: 150, icon: '/icons/pizza.png', active: true },
-  { name: 'Vegie Pizza', category: 'Pizza', price: 150, icon: '/icons/pizza.png', active: true },
-  
-  // SANDWICH 🥪
-  { name: 'Veg Cheese Grill Sandwich', category: 'Sandwich', price: 100, icon: '/icons/sandwich.png', active: true },
-  { name: 'Paneer Grill Sandwich', category: 'Sandwich', price: 120, icon: '/icons/sandwich.png', active: true },
-  { name: 'Club Sandwich', category: 'Sandwich', price: 70, icon: '/icons/sandwich.png', active: true },
-  { name: 'Corn Cheese Sandwich', category: 'Sandwich', price: 120, icon: '/icons/sandwich.png', active: true },
-
-  // BURGER 🍔
-  { name: 'Aloo Tikki Burger', category: 'Burger', price: 90, icon: '/icons/burger.png', active: true },
-  { name: 'Aloo Cheese Burger', category: 'Burger', price: 120, icon: '/icons/burger.png', active: true },
-  { name: 'Paneer Burger', category: 'Burger', price: 130, icon: '/icons/burger.png', active: true },
-  { name: 'Peri Peri Burger', category: 'Burger', price: 150, icon: '/icons/burger.png', active: true },
-
-  // PASTA 🍝
-  { name: 'White Sauce Pasta', category: 'Pasta', price: 180, icon: '/icons/pasta.png', active: true },
-  { name: 'Red Sauce Pasta', category: 'Pasta', price: 180, icon: '/icons/pasta.png', active: true },
-  { name: 'Mix Sauce Pasta', category: 'Pasta', price: 200, icon: '/icons/pasta.png', active: true },
-
-  // TOAST 🍞
-  { name: 'Garlic Toast', category: 'Toast', price: 110, icon: '/icons/toast.png', active: true },
-  { name: 'Cheese Chili Toast', category: 'Toast', price: 120, icon: '/icons/toast.png', active: true },
-
-  // NACHOS 🌮
-  { name: 'Salsa Nachos', category: 'Nachos', price: 110, icon: '/icons/nachos.png', active: true },
-  { name: 'Loaded Nachos', category: 'Nachos', price: 140, icon: '/icons/nachos.png', active: true },
-
-  // FRIES 🍟
-  { name: 'Salted Fries', category: 'Fries', price: 70, icon: '/icons/fries.png', active: true },
-  { name: 'Masala Fries', category: 'Fries', price: 100, icon: '/icons/fries.png', active: true },
-  { name: 'Peri Peri Fries', category: 'Fries', price: 80, icon: '/icons/fries.png', active: true },
-  { name: 'Cheese Fries', category: 'Fries', price: 150, icon: '/icons/fries.png', active: true },
-  { name: 'Loaded Fries', category: 'Fries', price: 160, icon: '/icons/fries.png', active: true },
-
-  // MAGGI 🍜
-  { name: 'Masala Maggi', category: 'Maggi', price: 80, icon: '/images/maggie.png', active: true },
-  { name: 'Vegetable Maggi', category: 'Maggi', price: 110, icon: '/images/maggie.png', active: true },
-  { name: 'Cheese Maggi', category: 'Maggi', price: 100, icon: '/images/maggie.png', active: true },
-  { name: 'Tandoor Maggi', category: 'Maggi', price: 110, icon: '/images/maggie.png', active: true },
-
-  // SPAGHETTI 🍝
-  { name: 'Red Sauce Spaghetti', category: 'Spaghetti', price: 200, icon: '/icons/spaghetti.png', active: true },
-  { name: 'White Sauce Spaghetti', category: 'Spaghetti', price: 200, icon: '/icons/spaghetti.png', active: true },
-  { name: 'Mix Sauce Spaghetti', category: 'Spaghetti', price: 250, icon: '/icons/spaghetti.png', active: true },
-
-  // DESSERT 🍰
-  { name: 'Brownie Sizzling', category: 'Dessert', price: 150, icon: '/icons/dessert.png', active: true },
-  { name: 'Plain Brownie', category: 'Dessert', price: 110, icon: '/icons/dessert.png', active: true },
-  { name: 'Fudge Brownie', category: 'Dessert', price: 120, icon: '/icons/dessert.png', active: true },
-
-  // COFFEE ☕
-  { name: 'Plain Cold Coffee', category: 'Coffee', price: 80, icon: '/icons/coffee.png', active: true },
-  { name: 'Irish Cold Coffee', category: 'Coffee', price: 100, icon: '/icons/coffee.png', active: true },
-  { name: 'Chocolate Cold Coffee', category: 'Coffee', price: 100, icon: '/icons/coffee.png', active: true },
-  { name: 'Hazelnut Cold Coffee', category: 'Coffee', price: 100, icon: '/icons/coffee.png', active: true },
-  { name: 'Cold Coffee with Ice Cream', category: 'Coffee', price: 100, icon: '/icons/coffee.png', active: true },
-  { name: 'Brownie Cold Coffee', category: 'Coffee', price: 150, icon: '/icons/coffee.png', active: true },
-
-  // SHAKE 🥤
-  { name: 'Strawberry Shake', category: 'Shake', price: 90, icon: '/images/shake.png', active: true },
-  { name: 'Mango Shake', category: 'Shake', price: 90, icon: '/images/shake.png', active: true },
-  { name: 'Chocolate Milk Shake', category: 'Shake', price: 90, icon: '/images/shake.png', active: true },
-  { name: 'Brownie Milk Shake', category: 'Shake', price: 110, icon: '/images/shake.png', active: true },
-
-  // NUGGETS 🍗
-  { name: 'Corn Cheese Ball', category: 'Nuggets', price: 130, icon: '/images/nuggets.png', active: true },
-  { name: 'Potato Cheese Ball', category: 'Nuggets', price: 110, icon: '/images/nuggets.png', active: true },
-
-  // MOCKTAIL 🍹
-  { name: 'Mojito', category: 'Mocktail', price: 90, icon: '/images/mocktail.png', active: true },
-  { name: 'Green AppleMocktail', category: 'Mocktail', price: 90, icon: '/images/mocktail.png', active: true },
-  { name: 'Lemonade', category: 'Mocktail', price: 90, icon: '/images/mocktail.png', active: true },
-  { name: 'Masala Lemonade', category: 'Mocktail', price: 110, icon: '/images/mocktail.png', active: true },
+  {
+    "_id": "med_dolo_650",
+    "id": "med_dolo_650",
+    "name": "Dolo 650 Tablet",
+    "price": 33,
+    "category": "Tablets",
+    "icon": "/icons/tablets.png",
+    "active": true
+  },
+  {
+    "_id": "med_crocin_advance",
+    "id": "med_crocin_advance",
+    "name": "Crocin Advance 500mg",
+    "price": 22,
+    "category": "Tablets",
+    "icon": "/icons/tablets.png",
+    "active": true
+  },
+  {
+    "_id": "med_augmentin_625",
+    "id": "med_augmentin_625",
+    "name": "Augmentin 625 Duo Tablet",
+    "price": 195,
+    "category": "Tablets",
+    "icon": "/icons/tablets.png",
+    "active": true
+  },
+  {
+    "_id": "med_azithral_500",
+    "id": "med_azithral_500",
+    "name": "Azithral 500 Tablet",
+    "price": 125,
+    "category": "Tablets",
+    "icon": "/icons/tablets.png",
+    "active": true
+  },
+  {
+    "_id": "med_pan_40",
+    "id": "med_pan_40",
+    "name": "Pan 40 Tablet",
+    "price": 155,
+    "category": "Tablets",
+    "icon": "/icons/tablets.png",
+    "active": true
+  },
+  {
+    "_id": "med_pan_d",
+    "id": "med_pan_d",
+    "name": "Pan-D Capsule",
+    "price": 180,
+    "category": "Capsules",
+    "icon": "/icons/capsules.png",
+    "active": true
+  },
+  {
+    "_id": "med_montair_lc",
+    "id": "med_montair_lc",
+    "name": "Montair LC Tablet",
+    "price": 210,
+    "category": "Tablets",
+    "icon": "/icons/tablets.png",
+    "active": true
+  },
+  {
+    "_id": "med_glycomet_gp1",
+    "id": "med_glycomet_gp1",
+    "name": "Glycomet-GP 1 Tablet",
+    "price": 85,
+    "category": "Tablets",
+    "icon": "/icons/tablets.png",
+    "active": true
+  },
+  {
+    "_id": "med_telma_40",
+    "id": "med_telma_40",
+    "name": "Telma 40 Tablet",
+    "price": 145,
+    "category": "Tablets",
+    "icon": "/icons/tablets.png",
+    "active": true
+  },
+  {
+    "_id": "med_okacet_10",
+    "id": "med_okacet_10",
+    "name": "Okacet 10mg Tablet",
+    "price": 22,
+    "category": "Tablets",
+    "icon": "/icons/tablets.png",
+    "active": true
+  }
 ];
 
-function generateId(name) {
-  // Deterministic stable string ID generator
-  return 'prod_' + name.toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_').replace(/(^_|_$)/g, '');
+const tempSqlFile = path.resolve('./seed-products.sql');
+let sql = 'DELETE FROM products;
+';
+for (const p of products) {
+  const id = p.id || p._id;
+  const name = p.name.replace(/'/g, "''");
+  const price = p.price;
+  const category = (p.category || 'Tablets').replace(/'/g, "''");
+  const icon = p.icon || '/icons/tablets.png';
+  const now = new Date().toISOString();
+  sql += ;
 }
 
-async function migrate() {
-  console.log('PRODUCT MIGRATION');
-  console.log('-----------------');
-  console.log(`Source products: ${products.length}`);
-  
-  // 1. Fetch current D1 products to determine counts
-  let existingIds = new Set();
-
-  let inserted = 0;
-  let updated = 0;
-  let skipped = 0;
-  let duplicates = 0; // The source array has exactly 40 unique, but we track theoretically.
-
-  const sqlStatements = [];
-  const processedIds = new Set();
-  const timestamp = new Date().toISOString();
-
-  for (const p of products) {
-    const id = generateId(p.name);
-    if (processedIds.has(id)) {
-      duplicates++;
-      continue;
-    }
-    processedIds.add(id);
-
-    if (existingIds.has(id)) {
-      updated++;
-    } else {
-      inserted++;
-    }
-
-    const price = parseInt(p.price); // Ensuring integer
-    const active = p.active ? 1 : 0;
-    
-    // SQLite doesn't have true booleans, use 1/0
-    // Use proper escaping for text
-    const escName = p.name.replace(/'/g, "''");
-    const escCategory = p.category.replace(/'/g, "''");
-    const escIcon = p.icon.replace(/'/g, "''");
-    
-    sqlStatements.push(`
-      INSERT INTO products (id, name, price, category, image_url, active, updated_at) 
-      VALUES ('${id}', '${escName}', ${price}, '${escCategory}', '${escIcon}', ${active}, '${timestamp}')
-      ON CONFLICT(id) DO UPDATE SET 
-        name=excluded.name, 
-        price=excluded.price, 
-        category=excluded.category, 
-        image_url=excluded.image_url, 
-        active=excluded.active, 
-        updated_at=excluded.updated_at;
-    `);
-  }
-
-  // Write SQL to a temporary file for wrangler to execute safely
-  const tempSqlFile = path.resolve(process.cwd(), 'temp_migration.sql');
-  fs.writeFileSync(tempSqlFile, sqlStatements.join('\n'));
-
-  console.log(`Generated migration SQL at ${tempSqlFile}`);
-  console.log(`Now run: npx wrangler d1 execute tbt-cafe-prod --remote -y --file="${tempSqlFile}"`);
-}
-
-migrate();
+fs.writeFileSync(tempSqlFile, sql);
+console.log('Generated seed-products.sql for top 10 medicines.');
+console.log('Run: npx wrangler d1 execute medical-pos-db --local --file=./seed-products.sql');

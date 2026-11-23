@@ -16,7 +16,7 @@
  * Run: node backend/testing/tz-boundary.test.mjs
  */
 
-const BASE_URL = 'https://cafe-pos-api.pruthvigavhane.workers.dev/api';
+const BASE_URL = 'http://localhost:8787/api';
 const IST_OFFSET_MINUTES = 330;
 
 function pass(msg) { console.log(`  ✅ PASS: ${msg}`); }
@@ -127,7 +127,7 @@ async function runTests() {
   // Cleanup note
   console.log('\n── CLEANUP ──');
   console.log('Remove test records with:');
-  console.log("  wrangler d1 execute tbt-cafe-prod --remote --command \"DELETE FROM orders WHERE id IN ('TEST_TZ_00000001','TEST_TZ_00000002')\"");
+  console.log("  wrangler d1 execute medical-pos-db --remote --command \"DELETE FROM orders WHERE id IN ('TEST_TZ_00000001','TEST_TZ_00000002')\"");
 
   console.log('\n═══════════════════════════════════════════════');
   if (process.exitCode === 1) {

@@ -1,4 +1,4 @@
-const API_URL = 'https://cafe-pos-api.pruthvigavhane.workers.dev';
+const API_URL = 'http://localhost:8787';
 
 async function run() {
   console.log("Fetching token...");
