@@ -32,12 +32,12 @@ export const useThemeStore = create<ThemeState>()(
         return theme;
       },
     }),
-    { name: 'tbt-theme' }
+    { name: 'medbill-theme' }
   )
 );
 
 // Initialize theme on module load
-const storedRaw = localStorage.getItem('tbt-theme');
+const storedRaw = localStorage.getItem('medbill-theme');
 if (storedRaw) {
   try {
     const parsed = JSON.parse(storedRaw) as { state?: { theme?: Theme } };

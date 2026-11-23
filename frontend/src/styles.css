@@ -8,7 +8,7 @@
 :root {
   font-family: "Avenir Next", "Nunito Sans", ui-sans-serif, sans-serif;
   color: #262523;
-  background: #f5f4f0;
+  background: #f8fafc;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   --background: oklch(1 0 0);
@@ -20,7 +20,7 @@
   --success: #3f9460;
   --alert: #b77a2f;
   --danger: #bb6545;
-  --accent-revenue: #a9653f;
+  --accent-revenue: #0284c7;
   --payment-upi: #7656b8;
   --payment-cash: #b77a2f;
   --payment-card: #3f7894;
@@ -367,14 +367,14 @@ th { color: var(--muted); font-size: 10px; letter-spacing: .6px; text-transform:
 
 /* ── Design tokens (light) ───────────────────────────────────────── */
 :root {
-  --bl-bg:      #F7F5F0;       /* warm off-white page bg  */
+  --bl-bg:      #F8FAFC;       /* warm off-white page bg  */
   --bl-card:    #FFFFFF;       /* product card bg          */
-  --bl-ink:     #1E1B18;       /* primary text             */
-  --bl-muted:   #8E897F;       /* secondary text / icons   */
-  --bl-line:    #E6E1D6;       /* borders                  */
-  --bl-brown:   #3E2009;       /* primary action / selected */
-  --bl-brown-lt:#F0E7DA;       /* chip bg, img area light  */
-  --bl-accent:  #A0622C;       /* price text               */
+  --bl-ink:     #0F172A;       /* primary text             */
+  --bl-muted:   #64748B;       /* secondary text / icons   */
+  --bl-line:    #E2E8F0;       /* borders                  */
+  --bl-brown:   #0284C7;       /* primary action / selected */
+  --bl-brown-lt:#E0F2FE;       /* chip bg, img area light  */
+  --bl-accent:  #0284C7;       /* price text               */
   --bl-nav-bg:  rgba(255,254,251,0.97);
   --bl-px:      16px;          /* page horizontal padding  */
   --bl-r-card:  16px;          /* card border-radius       */
@@ -388,9 +388,9 @@ th { color: var(--muted); font-size: 10px; letter-spacing: .6px; text-transform:
   --bl-ink:     #F0EDE7;
   --bl-muted:   #807A71;
   --bl-line:    rgba(255,255,255,0.09);
-  --bl-brown:   #C9956A;
-  --bl-brown-lt:rgba(201,149,106,0.12);
-  --bl-accent:  #C9956A;
+  --bl-brown:   #38BDF8;
+  --bl-brown-lt:rgba(56,189,248,0.15);
+  --bl-accent:  #38BDF8;
   --bl-nav-bg:  rgba(22,20,18,0.97);
 
   /* shadcn token overrides so page bg goes dark */

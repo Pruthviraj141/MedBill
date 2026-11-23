@@ -10,7 +10,16 @@ export type Product = {
   active: boolean;
 };
 
-export type CartItem = Product & { quantity: number };
+export type DosageSchedule = {
+  morning: number;
+  afternoon: number;
+  night: number;
+};
+
+export type CartItem = Product & {
+  quantity: number;
+  dosageSchedule?: DosageSchedule;
+};
 
 export type OrderItem = {
   productId: string;
@@ -18,6 +27,7 @@ export type OrderItem = {
   quantity: number;
   unitPrice: number;
   total?: number;
+  dosageSchedule?: string;
 };
 
 export type PaymentMethod = 'CASH' | 'UPI';
