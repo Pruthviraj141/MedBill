@@ -18,7 +18,8 @@ const productSchema = z.object({
   price: z.coerce.number().positive('Price must be greater than zero') 
 });
 
-let widgetInstance: any = null;
+// Offline image handler via FileReader (no external cloud needed)
+
 
 export function Products() {
   const productsQuery = useProducts();
@@ -30,6 +31,8 @@ export function Products() {
   const [editProduct, setEditProduct] = useState<Product | null>(null);
   
   const [imageUrl, setImageUrl] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const catFileInputRef = useRef<HTMLInputElement>(null);
   
   // Category state
   const [showCategoryDialog, setShowCategoryDialog] = useState(false);
@@ -59,43 +62,27 @@ export function Products() {
 
   const isHttpImage = (url: string | null) => {
     if (!url) return false;
-    // For safety since local paths are usually /images/...
-    return url.startsWith('/') || url.startsWith('http');
+    return url.startsWith('/') || url.startsWith('http') || url.startsWith('data:');
   };
   
-  const openCloudinary = (onSuccess: (url: string) => void) => {
-    // @ts-ignore
-    if (!window.cloudinary) {
-        alert("Cloudinary widget failed to load. Ensure you have network connectivity.");
-        return;
-    }
-    
-    if (!widgetInstance) {
-        // @ts-ignore
-        widgetInstance = window.cloudinary.createUploadWidget({
-            cloudName: import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || 'demo',
-            uploadPreset: import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || 'demo',
-            sources: ['local', 'url', 'camera'],
-            multiple: false
-        }, (error: any, result: any) => {
-            if (error) console.error("Cloudinary Widget Error:", error);
-            if (!error && result && result.event === "success") {
-                onSuccess(result.info.secure_url);
-            }
-        });
-    }
-    
-    try {
-        widgetInstance.open();
-    } catch (err) {
-        console.error("Failed to open widget:", err);
-    }
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>, onSuccess: (dataUrl: string) => void) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (typeof event.target?.result === 'string') {
+        onSuccess(event.target.result);
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   const createCategoryMutation = useMutation({
     mutationFn: async () => {
-      if (!newCatName || !newCatImageUrl) throw new Error("Category Name and Cloudinary Image are strictly required");
-      await settingsRepository.setSetting('category_image:' + newCatName.trim(), newCatImageUrl);
+      if (!newCatName.trim()) throw new Error("Category Name is required");
+      if (newCatImageUrl) {
+        await settingsRepository.setSetting('category_image:' + newCatName.trim(), newCatImageUrl);
+      }
     },
     onSuccess: () => {
        queryClient.invalidateQueries({ queryKey: ['settings'] });
@@ -264,11 +251,12 @@ export function Products() {
            <input className="w-full h-12 px-4 rounded-xl border border-border/50 bg-card/50 !text-black dark:!text-white !placeholder-black/50 dark:!placeholder-white/50 focus:outline-none focus:border-primary/50" type="number" min="1" step="1" placeholder="Price (Whole number)" {...form.register('price')} />
            
            <div className="flex flex-col gap-2 mt-2 p-3 bg-muted/30 rounded-xl border border-border">
-             <span className="text-xs font-bold text-muted-foreground uppercase">Image Priority Source</span>
+             <span className="text-xs font-bold text-muted-foreground uppercase">Product Image (Offline Storage)</span>
+             <input type="file" ref={fileInputRef} accept="image/*" className="hidden" onChange={e => handleFileSelect(e, setImageUrl)} />
              <div className="flex gap-2">
                {editProduct && (editProduct.image_url || getResolvedImage(editProduct)) ? (
                   <div className="flex-1 flex gap-2">
-                     <button type="button" onClick={() => openCloudinary(setImageUrl)} className="flex-1 flex items-center justify-center gap-2 h-10 rounded-xl text-xs font-bold bg-background border transition-all text-foreground hover:bg-muted">
+                     <button type="button" onClick={() => fileInputRef.current?.click()} className="flex-1 flex items-center justify-center gap-2 h-10 rounded-xl text-xs font-bold bg-background border transition-all text-foreground hover:bg-muted">
                        <Edit2 size={14}/> Replace
                      </button>
                      {(editProduct.image_url || imageUrl) && (
@@ -278,8 +266,8 @@ export function Products() {
                      )}
                   </div>
                ) : (
-                  <button type="button" onClick={() => openCloudinary(setImageUrl)} className={`flex-1 flex items-center justify-center gap-2 h-10 rounded-xl text-xs font-bold border transition-colors ${imageUrl ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30' : 'bg-background text-foreground border-border hover:bg-muted'}`}>
-                     {imageUrl ? <><CheckCircle2 size={16}/> Override Selected</> : <><UploadCloud size={16}/> Upload Unique Cloudinary Image</>}
+                  <button type="button" onClick={() => fileInputRef.current?.click()} className={`flex-1 flex items-center justify-center gap-2 h-10 rounded-xl text-xs font-bold border transition-colors ${imageUrl ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30' : 'bg-background text-foreground border-border hover:bg-muted'}`}>
+                     {imageUrl ? <><CheckCircle2 size={16}/> Offline Image Selected</> : <><UploadCloud size={16}/> Select Offline Image</>}
                   </button>
                )}
              </div>
@@ -329,17 +317,18 @@ export function Products() {
                   <h2 className="text-lg font-black tracking-tight">Create Category</h2>
                   <button onClick={() => setShowCategoryDialog(false)} className="opacity-50 hover:opacity-100 p-1 bg-transparent"><X size={20}/></button>
                </div>
-               <p className="text-sm text-muted-foreground leading-snug">Categories enforce strict image inheritance. You must supply a Cloudinary graphic to anchor this new grouping.</p>
+               <p className="text-sm text-muted-foreground leading-snug">Categories organize your medical catalog. You can optionally attach an icon or image.</p>
                
-               <input className="w-full h-12 px-4 rounded-xl border border-border/50 bg-card/50 !text-black dark:!text-white !placeholder-black/50 dark:!placeholder-white/50 focus:outline-none focus:border-primary/50" value={newCatName} onChange={e => setNewCatName(e.target.value)} placeholder="Category Name (e.g. Subs)" />
+               <input className="w-full h-12 px-4 rounded-xl border border-border/50 bg-card/50 !text-black dark:!text-white !placeholder-black/50 dark:!placeholder-white/50 focus:outline-none focus:border-primary/50" value={newCatName} onChange={e => setNewCatName(e.target.value)} placeholder="Category Name (e.g. Antibiotics, Syrups)" />
                
-               <button type="button" onClick={() => openCloudinary(setNewCatImageUrl)} className={`flex-1 flex items-center justify-center gap-2 h-12 rounded-xl text-sm font-bold border transition-colors ${newCatImageUrl ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30' : 'bg-orange-600/10 text-orange-600 border-orange-600/30'}`}>
-                     {newCatImageUrl ? <><CheckCircle2 size={18}/> Assigned</> : <><UploadCloud size={18}/> Require Upload</>}
+               <input type="file" ref={catFileInputRef} accept="image/*" className="hidden" onChange={e => handleFileSelect(e, setNewCatImageUrl)} />
+               <button type="button" onClick={() => catFileInputRef.current?.click()} className={`flex-1 flex items-center justify-center gap-2 h-12 rounded-xl text-sm font-bold border transition-colors ${newCatImageUrl ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30' : 'bg-background text-foreground border-border hover:bg-muted'}`}>
+                     {newCatImageUrl ? <><CheckCircle2 size={18}/> Image Selected</> : <><UploadCloud size={18}/> Category Image (Optional)</>}
                </button>
   
                <button 
                   onClick={() => createCategoryMutation.mutate()} 
-                  disabled={!newCatName.trim() || !newCatImageUrl || createCategoryMutation.isPending}
+                  disabled={!newCatName.trim() || createCategoryMutation.isPending}
                   className="primary-button h-12 mt-2 disabled:opacity-50"
                >
                   {createCategoryMutation.isPending ? 'Creating...' : 'Create & Save'}

@@ -22,7 +22,7 @@ import { AnimatedTicket } from '../../components/ui/ticket-confirmation-card';
 // FIX 1: Import printer service to wire thermal receipt printing into the Android checkout flow.
 import { printerService, printQueue } from '../../services/printer/printerService';
 
-const RECENT_KEY = 'tbt_recent_products';
+const RECENT_KEY = 'medbill_recent_products';
 const MAX_RECENT = 12;
 
 function getRecentIds(): string[] {
@@ -39,6 +39,7 @@ export function Billing() {
   const items = useCartStore((s) => s.items);
   const add = useCartStore((s) => s.add);
   const updateQty = useCartStore((s) => s.updateQuantity);
+  const toggleDosage = useCartStore((s) => s.toggleDosage);
   const clear = useCartStore((s) => s.clear);
 
   const [searchRaw, setSearchRaw] = useState('');
@@ -76,7 +77,16 @@ export function Billing() {
   const checkout = useMutation({
     mutationFn: async (pm: PaymentMethod) => {
       const dbOrder = await checkoutService.createOrder(
-        items.map((i) => ({ productId: i.id, quantity: i.quantity })),
+        items.map((i) => {
+          const m = i.dosageSchedule?.morning ?? 0;
+          const a = i.dosageSchedule?.afternoon ?? 0;
+          const n = i.dosageSchedule?.night ?? 0;
+          return {
+            productId: i.id,
+            quantity: i.quantity,
+            dosageSchedule: `${m}-${a}-${n}`,
+          };
+        }),
         pm
       );
       const uiOrder: Order = {
@@ -89,13 +99,19 @@ export function Billing() {
         grandTotal: dbOrder.total,
         paymentMethod: dbOrder.payment_method as any,
         createdAt: dbOrder.created_at,
-        items: items.map(i => ({
-          productId: i.id,
-          name: i.name,
-          quantity: i.quantity,
-          unitPrice: i.price,
-          total: i.price * i.quantity
-        }))
+        items: items.map(i => {
+          const m = i.dosageSchedule?.morning ?? 0;
+          const a = i.dosageSchedule?.afternoon ?? 0;
+          const n = i.dosageSchedule?.night ?? 0;
+          return {
+            productId: i.id,
+            name: i.name,
+            quantity: i.quantity,
+            unitPrice: i.price,
+            total: i.price * i.quantity,
+            dosageSchedule: `${m}-${a}-${n}`,
+          };
+        })
       };
       return uiOrder;
     },
@@ -130,7 +146,7 @@ export function Billing() {
         <div className="absolute left-4 text-muted-foreground"><Search size={18} /></div>
         <input
           type="text"
-          placeholder="Search for coffee, snacks, pizza..."
+          placeholder="Search medicines, tablets, syrups..."
           className="w-full h-12 pl-11 pr-11 rounded-3xl border border-transparent bg-white dark:bg-[#1C1C1E] text-foreground text-[14px] focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all shadow-sm dark:shadow-none dark:border-white/5"
           value={searchRaw}
           onChange={e => setSearchRaw(e.target.value)}
@@ -148,7 +164,7 @@ export function Billing() {
         {categories.map(c => (
           <button
             key={c}
-            className={`snap-start flex-none flex items-center justify-center h-[38px] px-4 rounded-full text-[13px] font-medium transition-all active:scale-95 ${cat === c ? 'bg-[#513217] text-white dark:bg-[#EAD6C0] dark:text-[#1A1917] shadow-md border-transparent' : 'bg-white dark:bg-transparent text-foreground border border-border/80 dark:border-white/10 hover:border-border'}`}
+            className={`snap-start flex-none flex items-center justify-center h-[38px] px-4 rounded-full text-[13px] font-medium transition-all active:scale-95 ${cat === c ? 'bg-[#0284c7] text-white dark:bg-[#38bdf8] dark:text-[#0f172a] shadow-md border-transparent' : 'bg-white dark:bg-transparent text-foreground border border-border/80 dark:border-white/10 hover:border-border'}`}
             onClick={() => setCat(c)}
           >
             {c === 'Recent' && <Clock size={13} className="mr-1.5 opacity-80" />}
@@ -174,9 +190,9 @@ export function Billing() {
 
       {productsQuery.isError && (
         <div className="flex flex-col items-center justify-center min-h-[200px] p-6 text-center border-2 border-dashed border-border rounded-3xl bg-muted/20">
-          <span className="text-4xl mb-3">☕</span>
-          <strong className="text-foreground text-[15px]">Menu unavailable</strong>
-          <span className="text-muted-foreground text-[13px] mt-1 mb-4">Could not load products</span>
+          <span className="text-4xl mb-3">💊</span>
+          <strong className="text-foreground text-[15px]">Medicines unavailable</strong>
+          <span className="text-muted-foreground text-[13px] mt-1 mb-4">Could not load medicines catalog</span>
           <button className="px-5 py-2.5 rounded-full bg-secondary text-secondary-foreground font-bold border text-[13px] active:scale-95" onClick={() => productsQuery.refetch()}>Retry</button>
         </div>
       )}
@@ -229,7 +245,7 @@ export function Billing() {
               <span className="text-[12px] font-medium text-muted-foreground">{itemCount} item{itemCount !== 1 ? 's' : ''}</span>
             </div>
           </div>
-          <button className="flex items-center justify-center gap-1.5 h-[46px] px-5 rounded-full bg-[#513217] dark:bg-[#EAD6C0] text-white dark:text-[#1A1917] text-[14px] font-bold active:opacity-80 transition-colors shadow-sm">
+          <button className="flex items-center justify-center gap-1.5 h-[46px] px-5 rounded-full bg-[#0284c7] dark:bg-[#38bdf8] text-white dark:text-[#0f172a] text-[14px] font-bold active:opacity-80 transition-colors shadow-sm">
             <span className="hidden dark:inline">View Cart</span><span className="dark:hidden">Bill Now</span> <span className="text-[16px] font-normal leading-none">→</span>
           </button>
         </div>
@@ -257,26 +273,62 @@ export function Billing() {
               <>
                 <div className="flex flex-col">
                   {items.map((item) => (
-                    <div className="flex items-center gap-3 py-3.5 border-b border-border/40" key={item.id}>
-                      <span className="w-10 h-10 flex flex-none items-center justify-center text-[22px] bg-secondary/60 rounded-xl">
-                        {((item.icon || item.image_url)?.startsWith('/') || (item.icon || item.image_url)?.startsWith('http')) ? <img src={item.icon || item.image_url} alt={item.name} className="w-7 h-7 object-contain" /> : (item.icon || item.image_url || '•')}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <strong className="block text-[14px] font-bold text-foreground truncate">{item.name}</strong>
-                        <span className="block text-[12px] text-muted-foreground mt-0.5">{formatMoney(item.price)}</span>
+                    <div className="flex flex-col py-3 border-b border-border/40 gap-2" key={item.id}>
+                      <div className="flex items-center gap-3">
+                        <span className="w-10 h-10 flex flex-none items-center justify-center text-[22px] bg-secondary/60 rounded-xl">
+                          {((item.icon || item.image_url)?.startsWith('/') || (item.icon || item.image_url)?.startsWith('http')) ? <img src={item.icon || item.image_url} alt={item.name} className="w-7 h-7 object-contain" /> : (item.icon || item.image_url || '•')}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <strong className="block text-[14px] font-bold text-foreground truncate">{item.name}</strong>
+                          <span className="block text-[12px] text-muted-foreground mt-0.5">{formatMoney(item.price)}</span>
+                        </div>
+                        <div className="flex items-center gap-2 px-1">
+                          <button className="w-8 h-8 rounded-full bg-card border shadow-sm text-foreground flex items-center justify-center active:scale-[0.85] transition-transform" onClick={() => updateQty(item.id, -1)}>
+                            {item.quantity === 1 ? <Trash2 size={14} /> : <Minus size={14} strokeWidth={3} />}
+                          </button>
+                          <b className="w-6 text-center text-[14px] font-black tabular-nums">{item.quantity}</b>
+                          <button className="w-8 h-8 rounded-full bg-[#0284c7] dark:bg-[#38bdf8] text-white dark:text-[#0f172a] shadow-sm flex items-center justify-center active:scale-[0.85] transition-transform" onClick={() => updateQty(item.id, 1)}>
+                            <Plus size={14} strokeWidth={3} />
+                          </button>
+                        </div>
+                        <strong className="w-16 text-right text-[15px] font-black text-foreground tabular-nums">
+                          {formatMoney(item.price * item.quantity)}
+                        </strong>
                       </div>
-                      <div className="flex items-center gap-2 px-1">
-                        <button className="w-8 h-8 rounded-full bg-card border shadow-sm text-foreground flex items-center justify-center active:scale-[0.85] transition-transform" onClick={() => updateQty(item.id, -1)}>
-                          {item.quantity === 1 ? <Trash2 size={14} /> : <Minus size={14} strokeWidth={3} />}
-                        </button>
-                        <b className="w-6 text-center text-[14px] font-black tabular-nums">{item.quantity}</b>
-                        <button className="w-8 h-8 rounded-full bg-[#3E2009] dark:bg-[#C9956A] text-white dark:text-[#1A1917] shadow-sm flex items-center justify-center active:scale-[0.85] transition-transform" onClick={() => updateQty(item.id, 1)}>
-                          <Plus size={14} strokeWidth={3} />
-                        </button>
+
+                      {/* Medicine Dosage Schedule: Morning (M), Afternoon (A), Night (N) */}
+                      <div className="flex items-center justify-between bg-muted/40 px-2.5 py-1.5 rounded-xl border border-border/30">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[11px] font-black text-muted-foreground uppercase tracking-wider mr-1">Dose:</span>
+                          {(['morning', 'afternoon', 'night'] as const).map(period => {
+                            const label = period === 'morning' ? 'Morning (M)' : period === 'afternoon' ? 'Afternoon (A)' : 'Night (N)';
+                            const short = period === 'morning' ? 'M' : period === 'afternoon' ? 'A' : 'N';
+                            const val = item.dosageSchedule?.[period] ?? 0;
+                            const isActive = val === 1;
+                            return (
+                              <button
+                                key={period}
+                                type="button"
+                                title={label}
+                                onClick={() => toggleDosage(item.id, period)}
+                                className={`px-2.5 py-1 text-xs font-black rounded-lg transition-all flex items-center gap-1 border active:scale-95 ${
+                                  isActive
+                                    ? 'bg-[#0284c7] text-white border-[#0284c7] shadow-sm'
+                                    : 'bg-background text-muted-foreground hover:bg-muted border-border/60'
+                                }`}
+                              >
+                                <span>{short}</span>
+                                <span className={`text-[10px] px-1 rounded font-mono ${isActive ? 'bg-white/25 text-white' : 'bg-muted text-foreground'}`}>
+                                  {val}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                        <span className="font-mono font-black text-[12px] text-primary">
+                          {`${item.dosageSchedule?.morning ?? 0}-${item.dosageSchedule?.afternoon ?? 0}-${item.dosageSchedule?.night ?? 0}`}
+                        </span>
                       </div>
-                      <strong className="w-16 text-right text-[15px] font-black text-foreground tabular-nums">
-                        {formatMoney(item.price * item.quantity)}
-                      </strong>
                     </div>
                   ))}
                 </div>
@@ -354,7 +406,7 @@ const ProductCard = memo(function ProductCard({
           ? <span className="absolute inset-0 flex items-center justify-center text-[44px] drop-shadow-sm">
               {((product.icon || product.image_url)?.startsWith('/') || (product.icon || product.image_url)?.startsWith('http')) ? <img src={product.icon || product.image_url} alt={product.name} className="w-20 h-20 object-contain drop-shadow-md" /> : (product.icon || product.image_url)}
             </span>
-          : <span className="absolute inset-0 flex items-center justify-center text-[38px] drop-shadow-sm opacity-60" aria-hidden>☕</span>
+          : <span className="absolute inset-0 flex items-center justify-center text-[38px] drop-shadow-sm opacity-60" aria-hidden>💊</span>
         }
       </div>
 
@@ -365,7 +417,7 @@ const ProductCard = memo(function ProductCard({
 
       {quantity === 0 ? (
         <button
-          className="absolute right-2 bottom-2 w-[28px] h-[28px] rounded-full bg-[#513217] dark:bg-[#EAD6C0] text-white dark:text-[#1A1917] flex items-center justify-center active:scale-90 transition-transform"
+          className="absolute right-2 bottom-2 w-[28px] h-[28px] rounded-full bg-[#0284c7] dark:bg-[#38bdf8] text-white dark:text-[#0f172a] flex items-center justify-center active:scale-90 transition-transform"
           onClick={(e) => {
             e.stopPropagation();
             blockRef.current = true;
@@ -378,7 +430,7 @@ const ProductCard = memo(function ProductCard({
         </button>
       ) : (
         <div
-          className="absolute right-2 bottom-2 flex items-center gap-1 px-1 py-0.5 rounded-full bg-[#513217] dark:bg-[#EAD6C0] text-white dark:text-[#1A1917] shadow-sm transform transition-all animate-in zoom-in"
+          className="absolute right-2 bottom-2 flex items-center gap-1 px-1 py-0.5 rounded-full bg-[#0284c7] dark:bg-[#38bdf8] text-white dark:text-[#0f172a] shadow-sm transform transition-all animate-in zoom-in"
           onClick={(e) => e.stopPropagation()}
           onPointerDown={() => { blockRef.current = true; }}
           onPointerUp={() => setTimeout(() => { blockRef.current = false; }, 60)}
