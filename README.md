@@ -1,40 +1,107 @@
-# TBT Cafe POS
+# MedBill Pharmacy POS
 
-A modern, offline-first Point of Sale (POS) system engineered specifically for TBT Cafe. 
+A modern, offline-first Point of Sale (POS) system engineered for retail pharmacies, medical dispensaries, and clinics. 
 
-The application is built on a highly resilient mobile topology that ensures seamless billing operations on Android tablets regardless of active internet connectivity, utilizing an isolated Native SQLite transaction engine coupled with background synchronization to Cloudflare edge networks.
+MedBill guarantees uninterrupted billing operations on Android mobile terminals, tablets, and desktop workstations regardless of network connectivity. Powered by local native SQLite persistence coupled with high-speed edge synchronization to Cloudflare Workers and D1 database.
+
+---
 
 ## Key Capabilities
-- **100% Offline-First Operations**: Cafe operations never halt. Taking cash/UPI orders works permanently offline without internet connections.
-- **Native Data Engine**: Direct, ultra-low latency hardware bindings to Android's built-in SQLite engine, bypassing browser-based database limits.
-- **Background Synchronization**: Background daemons elegantly resolve queue mismatches and upload telemetry to the cloud implicitly whenever cell coverage returns. 
-- **Cloud-Synced Master Catalog**: Product updates flow automatically from the cloud database downwards to all connected terminals.
-- **Advanced Real-time Analytics**: Tracks peak hours, sales items, and revenue matrix charts locally.
 
-## Architecture Pipeline
-- **Frontend Container**: React + Vite + Capacitor (Android 35).
-- **Frontend Storage Engine**: Capacitor Native SQLite (`@capacitor-community/sqlite`).
-- **Backend Edge Network**: Cloudflare Worker APIs via Hono.
-- **Cloud Source of Truth**: Cloudflare D1 Serverless SQL.
+- **100% Offline-First Billing**: Complete cash and UPI billing workflows continue uninterrupted without an active internet connection.
+- **Medicine Dosage Schedules**: Interactive Morning (**M**), Afternoon (**A**), and Night (**N**) dosage toggles (e.g. `1-0-1`) per medicine item, tracked in database orders.
+- **58mm Thermal Receipt Printing**: Formats ESC/POS receipts with clean medicine rows, bold dosage schedules, and QR codes via USB or Bluetooth.
+- **Virtual Print Preview**: Integrated live thermal receipt preview available locally at `http://127.0.0.1:28080/preview`.
+- **Edge Data Synchronization**: Automatic background synchronization queue reconciling local offline SQLite transactions with Cloudflare D1.
+- **Real-Time Pharmacy Analytics**: Tracks revenue, bill averages, top dispensed medicines, weekday sales trends, and peak hour distributions with `Today`, `7D`, `30D`, and `All Time` filters.
+- **Responsive Hybrid Interface**: Seamless automatic switching between Mobile Touch layout and Desktop Multi-Pane workstation.
 
-*(See [ARCHITECTURE](docs/ARCHITECTURE.md) for deeper insight)*
+---
 
-## Repository Structure
-- `/frontend`: The core React web app and Capacitor configurations.
-- `/backend`: The Hono API layer, Cloudflare deployment configurations, and D1 database commands.
-- `/docs`: Specialized developer resources and environment troubleshooting.
+## Tech Stack
 
-*(See [PROJECT STRUCTURE](docs/PROJECT_STRUCTURE.md) for directory maps)*
+| Layer | Technologies |
+| :--- | :--- |
+| **Frontend** | React 19, TypeScript, Vite, Tailwind CSS, Lucide Icons |
+| **State & Cache** | Zustand, TanStack React Query |
+| **Mobile Runtime** | Capacitor 8 (Android API 35) |
+| **Local Storage** | Capacitor Native SQLite (`@capacitor-community/sqlite`) |
+| **Edge Backend** | Cloudflare Workers, Hono framework |
+| **Cloud Database** | Cloudflare D1 (Serverless Distributed SQL) |
+| **Thermal Printing** | ESC/POS standard buffer, USB Print Agent (`usb-print-agent`) |
 
-## Environment Setup & Development
-For detailed instructions encompassing Node layouts, API definitions, testing, and production Worker integration:
-- See the [DEVELOPMENT.md](docs/DEVELOPMENT.md) guide to spin up the local UI targeting the real Cloudflare Edge Network.
-- See the [ANDROID.md](docs/ANDROID.md) guide for compiling the Capacitor Sandbox APK.
+---
 
-## Technical Documentation
-Please reference our technical manuals before modifying state or pipeline configurations:
-- [Data Storage & Schemas](docs/DATABASE.md)
-- [Synchronization Logic](docs/SYNC.md)
-- [Worker API Routes](docs/API.md)
+## Project Structure
+
+```text
+├── frontend/           # React 19 application & Capacitor Android wrapper
+│   ├── src/
+│   │   ├── app/        # App shell & responsive layout controller
+│   │   ├── features/   # Billing, Dashboard, Orders, Products, Desktop POS
+│   │   ├── db/         # SQLite engine, migrations, catalog seed data
+│   │   ├── services/   # Checkout, sync, thermal printer pipeline
+│   │   └── stores/     # Cart & theme state stores
+│   └── android/        # Native Android project configuration
+├── backend/            # Cloudflare Worker APIs & D1 database migrations
+│   ├── src/routes/     # Orders, products, sync, reports endpoints
+│   └── migrations/     # Cloudflare D1 schema & performance indexes
+├── usb-print-agent/    # Local print daemon & 58mm virtual receipt server
+├── windows-release/    # Windows standalone POS launcher & bundle
+└── docs/               # Technical architecture & deployment guides
+```
+
+---
+
+## Quick Start
+
+### 1. Frontend Development
+```bash
+cd frontend
+npm install
+npm run dev
+```
+Open [http://localhost:5173](http://localhost:5173) in your browser.  
+To view the mobile layout on desktop, visit [http://localhost:5173/?mode=mobile](http://localhost:5173/?mode=mobile) or toggle Chrome Device Mode (`Ctrl+Shift+M`).
+
+### 2. Virtual Thermal Print Agent
+```bash
+# Starts local ESC/POS print agent on port 28080
+PRINTER_MODE=virtual node usb-print-agent/server.js
+```
+Preview rendered receipts in real time at [http://127.0.0.1:28080/preview](http://127.0.0.1:28080/preview).
+
+### 3. Cloudflare Edge Backend
+```bash
+cd backend
+npm install
+npm run dev
+```
+
+---
+
+## Android Build (Capacitor)
+
+```bash
+cd frontend
+npm run build
+npx cap sync android
+npx cap open android
+```
+
+---
+
+## Documentation
+
+- [Architecture & Data Pipeline](docs/ARCHITECTURE.md)
+- [Database Schema & Migrations](docs/DATABASE.md)
+- [Cloud Synchronization Logic](docs/SYNC.md)
+- [API Specifications](docs/API.md)
+- [Android Setup & Build](docs/ANDROID.md)
 - [Production Deployment](docs/DEPLOYMENT.md)
-- [Troubleshooting & Gotchas](docs/TROUBLESHOOTING.md)
+
+---
+
+## License
+
+Private and proprietary. Developed for MedBill Pharmacy POS.
