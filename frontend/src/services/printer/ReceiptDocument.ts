@@ -6,6 +6,7 @@ export interface ReceiptItem {
   quantity: number;
   price: number;
   total: number;
+  dosageSchedule?: string;
 }
 
 export interface ReceiptDocument {
@@ -24,7 +25,7 @@ export interface ReceiptDocument {
 
 export const createReceiptDocument = async (order: Order, items: OrderItem[]): Promise<ReceiptDocument> => {
   // Try to get dynamic business name if exists, fallback to 'TBT CAFE'
-  let businessName = await settingsRepository.getSetting('businessName') || await settingsRepository.getSetting('cafeName') || 'TBT CAFE';
+  let businessName = await settingsRepository.getSetting('businessName') || await settingsRepository.getSetting('cafeName') || 'MEDBILL PHARMACY';
   
   const d = new Date(order.createdAt || new Date().toISOString());
   const date = `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
@@ -34,7 +35,8 @@ export const createReceiptDocument = async (order: Order, items: OrderItem[]): P
     name: i.name || i.productId,
     quantity: i.quantity,
     price: i.unitPrice,
-    total: i.total || (i.unitPrice * i.quantity)
+    total: i.total || (i.unitPrice * i.quantity),
+    dosageSchedule: i.dosageSchedule || '0-0-0'
   }));
 
   // Assuming simple no-GST/Discount in base DB model right now, mapping straight totals.

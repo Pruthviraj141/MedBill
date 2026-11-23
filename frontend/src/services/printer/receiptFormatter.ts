@@ -34,16 +34,16 @@ export class ReceiptFormatter {
         mainLines.push(remainingName);
         break;
       }
-      
+
       let breakPoint = remainingName.lastIndexOf(' ', nameWidth);
       if (breakPoint === -1 || breakPoint === 0) breakPoint = nameWidth;
-      
+
       mainLines.push(remainingName.substring(0, breakPoint).trim());
       remainingName = remainingName.substring(breakPoint).trim();
     }
 
     let result = '';
-    
+
     // First line includes Qty and Price
     const firstLineName = mainLines[0];
     const qtyStr = qty.padStart(qtyWidth);
@@ -54,7 +54,7 @@ export class ReceiptFormatter {
 
     // Append subsequent wrapped name lines if any
     for (let i = 1; i < mainLines.length; i++) {
-        result += mainLines[i] + '\n';
+      result += mainLines[i] + '\n';
     }
 
     return result.replace(/\n$/, '');
@@ -95,9 +95,9 @@ export class ReceiptFormatter {
     // 4. Items List
     for (const item of this.doc.items) {
       this.escpos.textLine(this.formatItemRow(
-          item.name, 
-          item.quantity.toString(), 
-          `₹${item.price.toFixed(2)}`
+        item.name,
+        item.quantity.toString(),
+        `₹${item.price.toFixed(2)}`
       ));
     }
     this.drawSeparator();
@@ -115,7 +115,7 @@ export class ReceiptFormatter {
       this.escpos.textLine(this.formatRow("GST", `₹${this.doc.gst.toFixed(2)}`, this.width));
     }
     this.drawSeparator();
-    
+
     this.escpos.boldOn();
     this.escpos.textLine(this.formatRow("TOTAL", `₹${this.doc.total.toFixed(2)}`, this.width));
     this.escpos.boldOff();
@@ -124,6 +124,33 @@ export class ReceiptFormatter {
     // 6. Payment info
     this.escpos.textLine(`Payment: ${this.doc.paymentMethod}`);
     this.escpos.textLine("");
+
+    // 7. Dosage Schedule (below Payment info)
+    const dosageItems = this.doc.items.filter(i => Boolean(i.dosageSchedule));
+    if (dosageItems.length > 0) {
+      this.drawSeparator();
+      this.escpos.boldOn();
+      this.escpos.textLine("DOSAGE SCHEDULE (M - A - N):");
+      this.escpos.boldOff();
+      this.escpos.textLine("M: Morning | A: Afternoon");
+      this.escpos.textLine("N: Night");
+      this.drawSeparator();
+      for (const item of dosageItems) {
+        const dose = item.dosageSchedule || '0-0-0';
+        const maxNameLen = Math.max(10, this.width - dose.length - 2);
+        let displayName = item.name;
+        if (displayName.length > maxNameLen) {
+          displayName = displayName.substring(0, maxNameLen).trim();
+        }
+        const spaceLength = Math.max(1, this.width - displayName.length - dose.length);
+        this.escpos.text(displayName + ' '.repeat(spaceLength));
+        this.escpos.boldOn();
+        this.escpos.text(dose);
+        this.escpos.boldOff();
+        this.escpos.newline();
+      }
+      this.escpos.textLine("");
+    }
 
     // 7. Footer message
     this.drawSeparator();

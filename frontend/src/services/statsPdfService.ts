@@ -72,7 +72,7 @@ export function exportStatsPdf(
   doc.setTextColor("#FFFFFF");
   doc.setFont("helvetica", "bold");
   doc.setFontSize(22);
-  doc.text("TBT CAFÉ", margin, 17);
+  doc.text("MEDBILL PHARMACY", margin, 17);
   doc.setFontSize(11);
   doc.setTextColor(CREAM_DARK);
   doc.setFont("helvetica", "normal");
@@ -210,7 +210,7 @@ export function exportStatsPdf(
     doc.setFontSize(8);
     doc.setTextColor(MUTED);
     doc.text(
-      `TBT Café POS  •  Page ${i} of ${pages}`,
+      `MedBill POS  •  Page ${i} of ${pages}`,
       pageW / 2,
       doc.internal.pageSize.getHeight() - 8,
       { align: "center" }
@@ -218,5 +218,5 @@ export function exportStatsPdf(
   }
 
   const day = now.toISOString().slice(0, 10);
-  doc.save(`TBT-Report-${period}-${day}.pdf`);
+  doc.save(`MedBill-Report-${period}-${day}.pdf`);
 }

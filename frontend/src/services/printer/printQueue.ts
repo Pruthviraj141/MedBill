@@ -6,7 +6,7 @@ export interface QueuedPrintJob {
   timestamp: number;
 }
 
-const QUEUE_KEY = 'tbt_failed_prints';
+const QUEUE_KEY = 'medix_failed_prints';
 
 /**
  * Isolated persistence wrapper for print jobs.

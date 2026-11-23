@@ -10,7 +10,7 @@ import { printQueue } from './printQueue';
 // FIX 5: In-flight sentinel key in localStorage.
 // If the app is killed/crashes while a print is in progress, the key survives.
 // On next module load we detect it and record the order as a failed job for retry.
-const INFLIGHT_KEY = 'tbt_print_inflight';
+const INFLIGHT_KEY = 'medix_print_inflight';
 
 function checkInflightOrphan() {
   const orphanId = localStorage.getItem(INFLIGHT_KEY);
