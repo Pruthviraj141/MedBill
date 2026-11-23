@@ -1,13 +1,13 @@
-name = "cafe-pos-api"
+name = "medical-pos-api"
 main = "src/index.ts"
 compatibility_date = "2026-09-01"
-account_id = "03e08078149c7af42ad7b6255cb8d2bb"
+account_id = "08b0f9512c1275035688d21dc3fdd075"
 compatibility_flags = ["nodejs_compat", "no_handle_cross_request_promise_resolution"]
 
 [vars]
-APP_ENV = "production"
+APP_ENV = "development"
 
 [[d1_databases]]
 binding = "DB"
-database_name = "tbt-cafe-prod"
-database_id = "1f72193e-436e-4d33-935b-d5b1e69724bc"
+database_name = "medical-pos-db"
+database_id = "83741745-c294-4475-a0df-b6f9a26a1010"
