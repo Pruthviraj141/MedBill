@@ -6,6 +6,7 @@ import { generateId } from '../utils/generateId';
 export interface CartItemInput {
   productId: string;
   quantity: number;
+  dosageSchedule?: string;
 }
 
 export const checkoutService = {
@@ -43,7 +44,8 @@ export const checkoutService = {
         name_snapshot: product.name,
         unit_price: product.price,
         quantity: q,
-        line_total: lineTotal
+        line_total: lineTotal,
+        dosage_schedule: item.dosageSchedule || '0-0-0'
       });
     }
 
