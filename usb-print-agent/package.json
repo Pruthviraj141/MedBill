@@ -1,6 +1,7 @@
 {
   "name": "cafe-pos-usb-proxy",
   "version": "1.0.0",
+  "type": "module",
   "description": "Local printer loopback for Cafe POS USB integration",
   "main": "server.js",
   "scripts": {

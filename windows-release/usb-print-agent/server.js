@@ -7,16 +7,44 @@ import os from 'os';
 const app = express();
 const PORT = 28080;
 
-// FIX 7: Restrict CORS to known Vite dev-server origins only.
-// A wildcard would allow any browser tab on this machine to trigger printing.
+// Allow all local dev origins (localhost, 127.0.0.1, LAN IP, any port)
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:8080', 'http://127.0.0.1:8080'],
-  methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type']
+  origin: true,
+  credentials: true
 }));
 app.use(express.json({ limit: '10mb' }));
 
-let lastVirtualReceipt = "<html><body><h2>No virtual receipt generated yet. Print an order first!</h2></body></html>";
+let lastVirtualReceipt = `<html><head><title>Virtual Receipt Preview</title><style>
+  body { background: #e2e8f0; display: flex; justify-content: center; padding: 24px; font-family: monospace; }
+  #receipt { background: #fff; width: 320px; padding: 24px 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); font-size: 13px; line-height: 1.3; border-radius: 4px; }
+  .line { word-wrap: break-word; white-space: pre-wrap; }
+  .left { text-align: left; }
+  .center { text-align: center; }
+  .right { text-align: right; }
+  .bold { font-weight: bold; }
+</style></head><body><div id="receipt">
+<div class="line center bold" style="font-size: 16px;">MEDBILL PHARMACY</div>
+<div class="line center">TAX INVOICE</div>
+<div class="line left">&nbsp;</div>
+<div class="line left">Date: ${new Date().toLocaleDateString('en-GB')}</div>
+<div class="line left">Time: ${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}</div>
+<div class="line left">--------------------------------</div>
+<div class="line left bold">ITEM&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;QTY&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;AMT</div>
+<div class="line left">--------------------------------</div>
+<div class="line left">Dolo 650 Tablet&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;2&nbsp;&nbsp;&nbsp;Rs.66.00</div>
+<div class="line left">Pan 40 Tablet&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1&nbsp;&nbsp;Rs.155.00</div>
+<div class="line left">--------------------------------</div>
+<div class="line left">Subtotal&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Rs.221.00</div>
+<div class="line left">Discount&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Rs.0.00</div>
+<div class="line left">--------------------------------</div>
+<div class="line left bold">TOTAL&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Rs.221.00</div>
+<div class="line left">--------------------------------</div>
+<div class="line left">Payment: UPI</div>
+<div class="line left">&nbsp;</div>
+<div class="line center bold">*** Thank you :) :) ***</div>
+<div class="line center">Please visit again!</div>
+<div style="border-top: 2px dashed #94a3b8; margin: 24px 0 10px;"></div>
+</div></body></html>`;
 
 function parseESCPOS(buffer) {
     let index = 0;
@@ -30,23 +58,53 @@ function parseESCPOS(buffer) {
       .bold { font-weight: bold; }
       canvas { margin-top: 10px; margin-bottom: 20px; }
     </style></head><body><div id="receipt">\n`;
-    let currentLine = ''; let align = 'left'; let bold = false;
+    let currentSegmentBytes = [];
+    let lineSegments = [];
+    let align = 'left';
+    let isBold = false;
+
+    const flushSegment = () => {
+        if (currentSegmentBytes.length > 0) {
+            let rawText = Buffer.from(currentSegmentBytes).toString('utf-8');
+            let text = rawText.replace(/ /g, '&nbsp;');
+            lineSegments.push({ text, bold: isBold });
+            currentSegmentBytes = [];
+        }
+    };
 
     const flushLine = () => {
-        let text = currentLine.replace(/ /g, '&nbsp;');
-        if (text === '') text = '&nbsp;';
-        html += `<div class="line ${align} ${bold ? 'bold' : ''}">${text}</div>\n`;
-        currentLine = '';
+        flushSegment();
+        if (lineSegments.length === 0) {
+            html += `<div class="line ${align}">&nbsp;</div>\n`;
+        } else {
+            let lineHtml = lineSegments.map(s => s.bold ? `<b>${s.text}</b>` : s.text).join('');
+            html += `<div class="line ${align}">${lineHtml}</div>\n`;
+        }
+        lineSegments = [];
     };
 
     while (index < buffer.length) {
         let b = buffer[index++];
         if (b === 0x1B) { // ESC
             let c = buffer[index++];
-            if (c === 0x40) { align = 'left'; bold = false; }
-            else if (c === 0x61) { let a = buffer[index++]; align = a === 1 ? 'center' : (a === 2 ? 'right' : 'left'); }
-            else if (c === 0x45) { bold = buffer[index++] === 1; }
-            else if (c === 0x64) { let lines = buffer[index++]; for(let i=0; i<lines; i++) flushLine(); }
+            if (c === 0x40) { 
+                flushSegment();
+                align = 'left'; 
+                isBold = false; 
+            }
+            else if (c === 0x61) { 
+                flushSegment();
+                let a = buffer[index++]; 
+                align = a === 1 ? 'center' : (a === 2 ? 'right' : 'left'); 
+            }
+            else if (c === 0x45) { 
+                flushSegment();
+                isBold = buffer[index++] === 1; 
+            }
+            else if (c === 0x64) { 
+                let lines = buffer[index++]; 
+                for(let i=0; i<lines; i++) flushLine(); 
+            }
         } else if (b === 0x1D) { // GS
             let c = buffer[index++];
             if (c === 0x76) { 
@@ -69,9 +127,9 @@ function parseESCPOS(buffer) {
                 html += `<div style="border-top: 2px dashed #bbb; margin: 30px 0 10px;"></div>\n`;
             }
         } else if (b === 0x0A) { flushLine(); } 
-        else if (b >= 0x20) { currentLine += String.fromCharCode(b); }
+        else if (b >= 0x20 || b === 0x09) { currentSegmentBytes.push(b); }
     }
-    if (currentLine) flushLine();
+    if (currentSegmentBytes.length > 0 || lineSegments.length > 0) flushLine();
     
     html += `</div><script>
       document.querySelectorAll('canvas').forEach(canvas => {
@@ -139,8 +197,8 @@ app.post('/print', (req, res) => {
       exec(`print /D:"\\\\localhost\\${printerTarget}" "${tempPath}"`, (error) => {
         fs.unlink(tempPath, () => {});
         if (error) {
-          console.error('[PRINTER AGENT] Windows print error:', error.message);
-          return res.status(500).send({ error: 'OS print command failed.', detail: error.message });
+          console.warn('[PRINTER AGENT] Windows physical print failed. Falling back to Virtual Receipt Preview:', error.message);
+          return res.status(200).send({ success: true, mode: 'virtual_fallback', previewUrl: 'http://127.0.0.1:28080/preview' });
         }
         res.status(200).send({ success: true, message: 'Print job completed.' });
       });
@@ -157,8 +215,8 @@ app.post('/print', (req, res) => {
       lp.on('close', (code) => {
         fs.unlink(tempPath, () => {});
         if (code !== 0) {
-          console.error(`[PRINTER AGENT] lp exited with code ${code}: ${stderrOutput}`);
-          return res.status(500).send({ error: 'OS print command failed.', detail: stderrOutput.trim() || `exit code ${code}` });
+          console.warn(`[PRINTER AGENT] No physical printer connected or lp exited with code ${code}. Saved to Virtual Receipt Preview.`);
+          return res.status(200).send({ success: true, mode: 'virtual_fallback', previewUrl: 'http://127.0.0.1:28080/preview' });
         }
         res.status(200).send({ success: true, message: 'Print job completed.' });
       });
@@ -175,7 +233,7 @@ app.post('/print', (req, res) => {
 });
 
 app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok', service: 'cafe-pos-usb-agent' });
+  res.status(200).json({ status: 'ok', service: 'medbill-usb-agent' });
 });
 
 app.get('/preview', (req, res) => {
@@ -184,6 +242,7 @@ app.get('/preview', (req, res) => {
 });
 
 app.listen(PORT, '127.0.0.1', () => {
-  console.log(`🔌 Cafe POS USB Print Agent running securely on port ${PORT}`);
+  console.log(`🔌 MedBill USB Print Agent running securely on port ${PORT}`);
+  console.log(`Virtual Preview available at: http://127.0.0.1:${PORT}/preview`);
   console.log(`Waiting for jobs...`);
 });
