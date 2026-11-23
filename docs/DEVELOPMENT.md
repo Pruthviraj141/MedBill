@@ -26,7 +26,7 @@ npm run dev
 
 ### 2. Emulate Local Development Configurations
 To ensure your frontend correctly maps to the live remote API, verify your `.env` specifies:
-`VITE_API_BASE_URL=https://cafe-pos-api.pruthvigavhane.workers.dev/api`
+`VITE_API_BASE_URL=http://localhost:8787/api`
 
 ## Running Standard Validations
 ### TypeScript Typings Check
@@ -43,6 +43,6 @@ npm run build
 
 ## Important Distinction: Local vs Production
 - **Local Development** (Browser) fetches strictly from configurations resolving to `127.0.0.1`.
-- **Production API** (Capacitor/Native) maps strictly through `/api` routes targeting `https://cafe-pos-api.pruthvigavhane.workers.dev/api`.
+- **Production API** (Capacitor/Native) maps strictly through `/api` routes targeting `http://localhost:8787/api`.
 
 **Do not hardcode `http://localhost` into raw fetch modules**, rely entirely on `import.meta.env.VITE_API_BASE_URL` to prevent breaking the APK's networking domain bounds.

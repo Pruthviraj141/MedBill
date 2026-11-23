@@ -23,7 +23,7 @@ Generates standard hardware executable testing APK files stored statically insid
 
 ## Production Configuration Bounds
 TBT Mobile runs identically configured reading explicit environmental binds mapping to `import.meta.env.VITE_API_BASE_URL` securely natively. Ensure explicit parsing logic dictates strict HTTPS configurations universally targeting production URLs precisely perfectly matching expected target limits reliably:
-`https://cafe-pos-api.pruthvigavhane.workers.dev/api`
+`http://localhost:8787/api`
 
 ## Important: Printers & External Bluetooth Integrations
 At this very precise snapshot logic frame, the Mobile OS fundamentally does explicitly **not** process arbitrary Bluetooth printing bounds directly natively yet. Printers require exact specification models configuring exact SDK implementations securely universally scheduled across future implementations inherently exclusively.

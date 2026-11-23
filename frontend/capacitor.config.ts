@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 const config: CapacitorConfig = {
-  appId: 'com.example.cafepos',
-  appName: 'TBT Cafe',
+  appId: 'com.medbill.pos',
+  appName: 'MedBill',
   webDir: 'dist',
   server: { androidScheme: 'https' }
 };
