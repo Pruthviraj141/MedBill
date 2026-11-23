@@ -22,10 +22,10 @@ const nativeImpl = {
 
     const itemStmts = items.map(item => ({
       statement: `
-        INSERT INTO order_items (id, order_id, product_id, name_snapshot, unit_price, quantity, line_total)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO order_items (id, order_id, product_id, name_snapshot, unit_price, quantity, line_total, dosage_schedule)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `,
-      values: [item.id, item.order_id, item.product_id, item.name_snapshot, item.unit_price, item.quantity, item.line_total]
+      values: [item.id, item.order_id, item.product_id, item.name_snapshot, item.unit_price, item.quantity, item.line_total, item.dosage_schedule || '0-0-0']
     }));
 
     const syncPayload = { order, items };
@@ -131,10 +131,10 @@ const nativeImpl = {
     // Step 2: Upsert items with INSERT OR IGNORE (items are immutable once created).
     const itemStmts = items.map(item => ({
       statement: `
-        INSERT OR IGNORE INTO order_items (id, order_id, product_id, name_snapshot, unit_price, quantity, line_total)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT OR IGNORE INTO order_items (id, order_id, product_id, name_snapshot, unit_price, quantity, line_total, dosage_schedule)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `,
-      values: [item.id, item.order_id, item.product_id, item.name_snapshot, item.unit_price, item.quantity, item.line_total]
+      values: [item.id, item.order_id, item.product_id, item.name_snapshot, item.unit_price, item.quantity, item.line_total, item.dosage_schedule || '0-0-0']
     }));
 
     const set = [orderStmt, ...itemStmts];
@@ -161,9 +161,27 @@ const nativeImpl = {
 // ----------------------------------------------------------------------
 // WEB IMPLEMENTATION
 // ----------------------------------------------------------------------
+const WEB_ORDERS_KEY = 'medbill_web_orders';
+const getWebOrders = (): { orders: any[], details: Record<string, any> } => {
+  try {
+    const raw = localStorage.getItem(WEB_ORDERS_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch(e) {}
+  return { orders: [], details: {} };
+};
+const saveWebOrders = (data: { orders: any[], details: Record<string, any> }) => {
+  try {
+    localStorage.setItem(WEB_ORDERS_KEY, JSON.stringify(data));
+  } catch(e) {}
+};
+
 const webImpl = {
   createOrderBase: async (order: Order, items: OrderItem[]) => {
-    // Construct exact payload for D1 endpoint
+    const store = getWebOrders();
+    store.orders.unshift(order);
+    store.details[order.id] = { order, items };
+    saveWebOrders(store);
+
     const payload = {
       id: order.id,
       invoiceNumber: order.invoice_number,
@@ -174,57 +192,79 @@ const webImpl = {
          productId: i.product_id,
          name: i.name_snapshot,
          quantity: i.quantity,
-         price: i.unit_price
+         price: i.unit_price,
+         dosageSchedule: i.dosage_schedule || '0-0-0'
       }))
     };
-    
-    await webApiClient.post('/orders', payload);
+    try {
+      await webApiClient.post('/orders', payload);
+    } catch (e) {}
     return order;
   },
 
   voidOrder: async (id: string, reason: string) => {
-    await webApiClient.post(`/orders/${id}/void`, { reason });
+    const store = getWebOrders();
+    const o = store.orders.find(item => item.id === id);
+    if (o) {
+      o.status = 'VOIDED';
+      o.void_reason = reason;
+      o.voided_at = new Date().toISOString();
+    }
+    if (store.details[id]?.order) {
+      store.details[id].order.status = 'VOIDED';
+      store.details[id].order.void_reason = reason;
+      store.details[id].order.voided_at = new Date().toISOString();
+    }
+    saveWebOrders(store);
+    try {
+      await webApiClient.post(`/orders/${id}/void`, { reason });
+    } catch (e) {}
   },
 
   getOrders: async (limit: number = 100): Promise<Order[]> => {
-    const data = await webApiClient.get('/orders');
-    return (data.orders || []).map((o: any) => ({
-      ...o,
-      total: o.grandTotal !== undefined ? o.grandTotal : o.total,
-      invoice_number: o.invoiceNumber || o.invoice_number,
-      payment_method: o.paymentMethod || o.payment_method,
-      created_at: o.createdAt || o.created_at
-    }));
+    try {
+      const data = await webApiClient.get('/orders');
+      if (data && Array.isArray(data.orders) && data.orders.length > 0) {
+        return (data.orders || []).map((o: any) => ({
+          ...o,
+          total: o.grandTotal !== undefined ? o.grandTotal : o.total,
+          invoice_number: o.invoiceNumber || o.invoice_number,
+          payment_method: o.paymentMethod || o.payment_method,
+          created_at: o.createdAt || o.created_at
+        }));
+      }
+    } catch (e) {}
+    return getWebOrders().orders.slice(0, limit);
   },
 
   getOrderById: async (id: string): Promise<{ order: Order, items: OrderItem[] } | null> => {
-    const data = await webApiClient.get('/orders');
-    const orderData = (data.orders || []).find((o: any) => o.id === id);
-    if (!orderData) return null;
-
-    const order: Order = {
-      ...orderData,
-      total: orderData.grandTotal !== undefined ? orderData.grandTotal : orderData.total,
-      invoice_number: orderData.invoiceNumber || orderData.invoice_number,
-      payment_method: orderData.paymentMethod || orderData.payment_method,
-      created_at: orderData.createdAt || orderData.created_at
-    };
-
-    const items: OrderItem[] = (orderData.items || []).map((i: any) => ({
-       id: generateId(), // we can mock an ID for UI
-       order_id: id,
-       product_id: i.productId,
-       name_snapshot: i.name,
-       unit_price: i.unitPrice,
-       quantity: i.quantity,
-       line_total: i.total
-    }));
-
-    return { order, items };
+    try {
+      const data = await webApiClient.get('/orders');
+      const orderData = (data.orders || []).find((o: any) => o.id === id);
+      if (orderData) {
+        const order: Order = {
+          ...orderData,
+          total: orderData.grandTotal !== undefined ? orderData.grandTotal : orderData.total,
+          invoice_number: orderData.invoiceNumber || orderData.invoice_number,
+          payment_method: orderData.paymentMethod || orderData.payment_method,
+          created_at: orderData.createdAt || orderData.created_at
+        };
+        const items: OrderItem[] = (orderData.items || []).map((i: any) => ({
+           id: generateId(),
+           order_id: id,
+           product_id: i.productId,
+           name_snapshot: i.name,
+           unit_price: i.unitPrice,
+           quantity: i.quantity,
+           line_total: i.total
+        }));
+        return { order, items };
+      }
+    } catch (e) {}
+    return getWebOrders().details[id] || null;
   },
 
   insertCloudOrderBase: async (order: Order, items: OrderItem[]) => {
-    // Web interacts strictly online. Incremental local storing is native only.
     return;
   }
 };
