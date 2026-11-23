@@ -23,7 +23,7 @@ function NavItem({ active, icon, label, onClick }: { active: boolean; icon: Reac
       className={`flex flex-col items-center justify-center gap-1 w-[72px] h-14 rounded-2xl transition-all active:scale-95 ${active ? 'text-primary' : 'text-muted-foreground hover:opacity-80'}`} 
       onClick={onClick}
     >
-      <div className={`flex items-center justify-center w-10 h-8 rounded-xl transition-all duration-300 ${active ? 'bg-gradient-to-br from-[#3E2009] to-[#603513] text-white shadow-md scale-110' : 'bg-transparent text-muted-foreground'}`}>
+      <div className={`flex items-center justify-center w-10 h-8 rounded-xl transition-all duration-300 ${active ? 'bg-gradient-to-br from-[#0284c7] to-[#0369a1] text-white shadow-md scale-110' : 'bg-transparent text-muted-foreground'}`}>
         {icon}
       </div>
       <span className={`text-[10px] font-black tracking-wide transition-colors ${active ? 'text-foreground' : ''}`}>{label}</span>
@@ -36,6 +36,18 @@ export function App() {
   const [isOffline, setIsOffline] = useState(false);
   const [dbReady, setDbReady] = useState(false);
   const [dbError, setDbError] = useState('');
+  const [mode, setMode] = useState<string>(() => {
+    if (typeof window === 'undefined') return 'auto';
+    const params = new URLSearchParams(window.location.search);
+    return params.get('mode') || (params.has('mobile') ? 'mobile' : 'auto');
+  });
+  const [windowWidth, setWindowWidth] = useState(() => (typeof window !== 'undefined' ? window.innerWidth : 1200));
+
+  useEffect(() => {
+    const onResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   useEffect(() => {
     // 1. Initialize DB safely
@@ -45,7 +57,7 @@ export function App() {
         try {
           const local = await productsRepository.getAllProducts();
           if (local.length === 0) {
-            console.log('[BOOTSTRAP] Fast-path hydrating 51 products preventing UI pop-in.');
+            console.log('[BOOTSTRAP] Fast-path hydrating top 10 medicines.');
             for (const p of defaultCatalog) await productsRepository.upsertProduct(p as unknown as Product);
           }
         } catch (e) {
@@ -92,7 +104,7 @@ export function App() {
         <Database size={48} className="text-destructive opacity-80" />
         <h2 className="text-xl font-bold text-destructive">Database Error</h2>
         <p className="text-sm font-medium text-muted-foreground">{dbError}</p>
-        <p className="text-[12px] opacity-70 mt-4">TBT Cafe offline engine strictly requires Capacitor Native Environment.</p>
+        <p className="text-[12px] opacity-70 mt-4">MedBill offline engine strictly requires Capacitor Native Environment.</p>
       </div>
     );
   }
@@ -106,12 +118,12 @@ export function App() {
     );
   }
 
-  const isDesktopWeb = !Capacitor.isNativePlatform();
+  const isDesktopWeb = !Capacitor.isNativePlatform() && (mode === 'desktop' || (mode !== 'mobile' && windowWidth >= 1024));
 
   if (isDesktopWeb) {
     return (
       <Suspense fallback={<div className="flex justify-center items-center h-[100dvh]"><div className="w-8 h-8 rounded-full border-4 border-primary/30 border-t-primary animate-spin" /></div>}>
-        <DesktopApp view={view} setView={setView} isOffline={isOffline} />
+        <DesktopApp view={view} setView={setView} isOffline={isOffline} onSwitchToMobile={() => setMode('mobile')} />
       </Suspense>
     );
   }
@@ -120,19 +132,28 @@ export function App() {
     <div className="min-h-[100dvh] bg-background text-foreground flex flex-col pb-[calc(72px+env(safe-area-inset-bottom))]">
       <header className="sticky top-0 z-20 h-16 flex items-center justify-between px-4 bg-background/95 backdrop-blur-md border-b shadow-sm border-border">
         <div className="flex items-center gap-3">
-          <img src={logoSrc} alt="TBT Cafe" className="w-10 h-10 rounded-xl object-cover shadow-sm bg-primary" />
+          <img src={logoSrc} alt="MedBill" className="w-10 h-10 rounded-xl object-cover shadow-sm bg-primary" />
           <div className="flex flex-col">
-            <strong className="text-sm font-bold leading-tight tracking-tight text-foreground">TBT CAFE</strong>
-            <span className="text-[10px] font-black tracking-widest text-[#a9653f] uppercase mt-0.5">CAFÉ POS</span>
+            <strong className="text-sm font-bold leading-tight tracking-tight text-foreground">MEDBILL</strong>
+            <span className="text-[10px] font-black tracking-widest text-emerald-600 dark:text-emerald-400 uppercase mt-0.5">PHARMACY POS</span>
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {!Capacitor.isNativePlatform() && (
+            <button
+              onClick={() => setMode('desktop')}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-full border border-border bg-card text-[11px] font-bold text-muted-foreground hover:bg-muted active:scale-95 transition-all shadow-xs"
+              title="Switch to Desktop POS layout"
+            >
+              💻 Desktop
+            </button>
+          )}
           <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border shadow-sm text-[11px] font-bold ${isOffline ? 'border-destructive/30 text-destructive bg-destructive/10' : 'border-border text-muted-foreground bg-card'}`}>
             <span className={`w-2 h-2 rounded-full ${isOffline ? 'bg-destructive' : 'bg-green-500'}`} />
             {isOffline ? 'Offline' : 'Online'}
           </div>
           <button 
-            className="w-10 h-10 rounded-full bg-gradient-to-br from-[#3E2009] to-[#8E4A1C] text-white font-bold text-lg flex items-center justify-center shadow-md active:scale-95 transition-transform" 
+            className="w-10 h-10 rounded-full bg-gradient-to-br from-[#0284c7] to-[#0ea5e9] text-white font-bold text-lg flex items-center justify-center shadow-md active:scale-95 transition-transform" 
             onClick={() => setView('settings')}
             aria-label="Settings"
           >

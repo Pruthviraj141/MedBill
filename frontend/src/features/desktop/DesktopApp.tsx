@@ -13,6 +13,7 @@ interface DesktopAppProps {
   view: string;
   setView: React.Dispatch<React.SetStateAction<string>>;
   isOffline: boolean;
+  onSwitchToMobile?: () => void;
 }
 
 function DesktopNavItem({ active, icon, label, onClick }: { active: boolean; icon: React.ReactNode; label: string; onClick: () => void }) {
@@ -21,7 +22,7 @@ function DesktopNavItem({ active, icon, label, onClick }: { active: boolean; ico
       className={`flex flex-col items-center justify-center gap-1.5 w-24 h-[72px] rounded-2xl transition-all active:scale-95 ${active ? 'text-primary' : 'text-muted-foreground hover:bg-black/5 dark:hover:bg-white/5'}`} 
       onClick={onClick}
     >
-      <div className={`flex items-center justify-center w-12 h-10 rounded-xl transition-all duration-300 ${active ? 'bg-gradient-to-br from-[#3E2009] to-[#603513] text-white shadow-lg scale-110' : 'bg-transparent text-muted-foreground'}`}>
+      <div className={`flex items-center justify-center w-12 h-10 rounded-xl transition-all duration-300 ${active ? 'bg-gradient-to-br from-[#0284c7] to-[#0369a1] text-white shadow-lg scale-110' : 'bg-transparent text-muted-foreground'}`}>
         {icon}
       </div>
       <span className={`text-[12px] font-black tracking-wide transition-colors ${active ? 'text-foreground' : ''}`}>{label}</span>
@@ -29,24 +30,33 @@ function DesktopNavItem({ active, icon, label, onClick }: { active: boolean; ico
   );
 }
 
-export function DesktopApp({ view, setView, isOffline }: DesktopAppProps) {
+export function DesktopApp({ view, setView, isOffline, onSwitchToMobile }: DesktopAppProps) {
   return (
     <div className="min-h-[100dvh] bg-background text-foreground flex flex-col pb-[110px] desktop-layout overflow-hidden">
       {/* Top Header */}
       <header className="sticky top-0 z-20 h-20 flex items-center justify-between px-8 bg-background/90 backdrop-blur-md border-b shadow-sm border-border">
         <div className="flex items-center gap-4">
-          <img src={logoSrc} alt="TBT Cafe" className="w-12 h-12 rounded-2xl object-cover shadow-sm bg-primary" />
+          <img src={logoSrc} alt="MedBill" className="w-12 h-12 rounded-2xl object-cover shadow-sm bg-primary" />
           <div className="flex flex-col">
-            <strong className="text-lg font-black leading-tight tracking-tight text-foreground">TBT CAFE</strong>
-            <span className="text-[12px] font-black tracking-[0.2em] text-[#a9653f] uppercase mt-0.5">CAFÉ POS SERVER</span>
+            <strong className="text-lg font-black leading-tight tracking-tight text-foreground">MEDBILL PHARMACY</strong>
+            <span className="text-[12px] font-black tracking-[0.2em] text-emerald-600 dark:text-emerald-400 uppercase mt-0.5">MEDICAL POS</span>
           </div>
         </div>
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-4">
+          {onSwitchToMobile && (
+            <button
+              onClick={onSwitchToMobile}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-full border border-sky-300 dark:border-sky-800 bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 text-xs font-black hover:bg-sky-100 dark:hover:bg-sky-900/60 active:scale-95 transition-all shadow-xs"
+              title="Preview Mobile App view"
+            >
+              📱 Mobile Preview
+            </button>
+          )}
           <div className={`flex items-center gap-2 px-4 py-2 rounded-full border shadow-sm text-sm font-bold ${isOffline ? 'border-destructive/30 text-destructive bg-destructive/10' : 'border-border text-muted-foreground bg-card'}`}>
             <span className={`w-2.5 h-2.5 rounded-full ${isOffline ? 'bg-destructive' : 'bg-green-500'}`} />
             {isOffline ? 'Offline' : 'System Online'}
           </div>
-          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#3E2009] to-[#8E4A1C] text-white font-bold text-xl flex items-center justify-center shadow-md">
+          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#0284c7] to-[#0ea5e9] text-white font-bold text-xl flex items-center justify-center shadow-md">
             G
           </div>
         </div>
