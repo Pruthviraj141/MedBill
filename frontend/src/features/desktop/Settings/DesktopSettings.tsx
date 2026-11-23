@@ -15,7 +15,7 @@ export function DesktopSettings({ setView }: { setView?: (v: string) => void }) 
     const dummyOrder: Order = {
        id: 'TEST-1234',
        _id: 'TEST-1234', 
-       cafeId: 'TBT-CAFE',
+       cafeId: 'MEDBILL-PHARMACY',
        items: [{ productId: 'item-1', name: 'Test Receipt Trigger', quantity: 1, unitPrice: 0, total: 0 }],
        paymentMethod: 'CASH',
        subtotal: 0,
@@ -149,7 +149,7 @@ export function DesktopSettings({ setView }: { setView?: (v: string) => void }) 
                onClick={() => setView?.('products')}
                className="w-full flex items-center justify-between p-4 rounded-xl border-2 border-primary/30 bg-primary/5 hover:border-primary/60 transition-all font-bold text-foreground"
              >
-               Manage Cloudinary Menu
+               Manage Medicine Catalog
                <Store size={18} className="text-primary" />
             </button>
           </div>

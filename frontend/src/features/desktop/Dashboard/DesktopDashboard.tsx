@@ -1,13 +1,12 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { useDashboard } from '../../../hooks/useDashboard';
-import { useOrders } from '../../../hooks/useOrders';
-import { Loader2, TrendingUp, ShoppingBag, Clock, CreditCard, Banknote, Coffee, ArrowRight, BarChart3, Receipt, Sparkles, RefreshCw, X } from 'lucide-react';
+import { Loader2, TrendingUp, ShoppingBag, Clock, CreditCard, ArrowRight, BarChart3, Receipt, RefreshCw, X, Pill, Activity } from 'lucide-react';
 import { formatMoney, formatTime } from '../../../utils/format';
-import { getDensePeakHours, getDenseWeekdays, getValidPaymentsData, getDonutGradient, getTopProducts } from '../../../utils/dashboardUtils';
+import { getDensePeakHours, getDenseWeekdays, getValidPaymentsData, getDonutGradient } from '../../../utils/dashboardUtils';
 import { ActivityTimelineChart } from './ActivityTimelineChart';
 import { ExportPdfButton } from '../../../components/ExportPdfButton';
 
-const periods = ['today', 'week', 'month'] as const;
+const periods = ['today', 'week', 'month', 'all'] as const;
 
 export function DesktopDashboard({ onGo }: { onGo: (v: string) => void }) {
   const [period, setPeriod] = useState<(typeof periods)[number]>('today');
@@ -15,16 +14,11 @@ export function DesktopDashboard({ onGo }: { onGo: (v: string) => void }) {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [topProductsOpen, setTopProductsOpen] = useState(false);
 
-  // Exclusively using existing hooks per Rule 1
   const reportQuery = useDashboard(period);
-  const ordersQuery = useOrders();
-
   const report = reportQuery.data;
-  const orders = ordersQuery.data?.orders ?? [];
 
-  const topProducts = useMemo(() => {
-    return getTopProducts(orders, report?.topProducts ?? [], period);
-  }, [orders, report?.topProducts, period]);
+  const topProducts = (report?.topProducts ?? []).map((x: any) => ({ ...x, revenue: Number(x.revenue ?? 0) }));
+  const recentOrders = report?.recentOrders ?? [];
 
   if (reportQuery.isLoading) {
     return (
@@ -34,9 +28,8 @@ export function DesktopDashboard({ onGo }: { onGo: (v: string) => void }) {
     );
   }
 
-  // ZERO DUPLICATION: Re-using exact pure functions from the refactored dashboardUtils.ts
   const rawPeakHours = report?.peakHours ?? [];
-  const densePeakHours = getDensePeakHours(rawPeakHours, period, orders);
+  const densePeakHours = getDensePeakHours(rawPeakHours, period);
 
   const rawWeekdays = report?.weekdayPattern ?? [];
   const denseWeekdays = getDenseWeekdays(rawWeekdays);
@@ -75,8 +68,8 @@ export function DesktopDashboard({ onGo }: { onGo: (v: string) => void }) {
               onClick={async (e) => {
                  e.stopPropagation();
                  setIsRefreshing(true);
-                 await Promise.all([reportQuery.refetch(), ordersQuery.refetch()]);
-                 setTimeout(() => setIsRefreshing(false), 400);
+                 await reportQuery.refetch();
+                 setTimeout(() => setIsRefreshing(false), 300);
               }}
             >
               <RefreshCw size={14} className={`${isRefreshing ? 'animate-spin text-primary' : ''}`} strokeWidth={3} />
@@ -89,10 +82,10 @@ export function DesktopDashboard({ onGo }: { onGo: (v: string) => void }) {
              {periods.map((item) => (
                <button 
                  key={item} 
-                 className={`flex items-center justify-center h-[36px] px-6 rounded-full text-[13px] font-bold transition-all active:scale-[0.98] ${period === item ? 'bg-[#EAD6C0] text-[#1A1917] shadow-md' : 'bg-transparent text-white/50 hover:text-white/90 hover:bg-white/10'}`} 
+                 className={`flex items-center justify-center h-[36px] px-5 rounded-full text-[13px] font-bold transition-all active:scale-[0.98] ${period === item ? 'bg-[#e0f2fe] text-[#0369a1] shadow-md' : 'bg-transparent text-white/50 hover:text-white/90 hover:bg-white/10'}`} 
                  onClick={() => setPeriod(item)}
                >
-                 {item === 'today' ? 'Today' : item === 'week' ? 'Week' : 'Month'}
+                 {item === 'today' ? 'Today' : item === 'week' ? 'Week' : item === 'month' ? 'Month' : 'All Time'}
                </button>
              ))}
            </div>
@@ -114,17 +107,17 @@ export function DesktopDashboard({ onGo }: { onGo: (v: string) => void }) {
         <div className="md:col-span-8 flex flex-col gap-6">
           
           {/* HERO CARD (Desktop Scaled) */}
-          <div className="desktop-card bg-gradient-to-br from-[#3E2009] to-[#8E4A1C] text-white p-8 relative overflow-hidden group shadow-lg" onClick={(e) => e.stopPropagation()}>
-            <div className="absolute right-0 top-0 h-full w-[250px] bg-gradient-to-l from-white/10 to-transparent flex items-center justify-end pr-4 pointer-events-none opacity-40">
-               <span className="text-[140px] filter drop-shadow-lg brightness-75 -mt-4">☕</span>
+          <div className="desktop-card bg-gradient-to-br from-[#0369a1] to-[#0284c7] text-white p-8 relative overflow-hidden group shadow-lg" onClick={(e) => e.stopPropagation()}>
+            <div className="absolute right-0 top-0 h-full w-[250px] bg-gradient-to-l from-white/10 to-transparent flex items-center justify-end pr-4 pointer-events-none opacity-25">
+               <Activity size={180} strokeWidth={1.5} className="text-white" />
             </div>
             <div className="relative z-10 flex gap-12 items-start">
               <div>
                 <div className="flex items-center gap-2 mb-2 opacity-90">
-                  <div className="w-[24px] h-[24px] bg-[#EAD6C0]/20 rounded flex items-center justify-center">
-                    <BarChart3 size={14} className="text-[#EAD6C0]" strokeWidth={3} />
+                  <div className="w-[24px] h-[24px] bg-[#38bdf8]/20 rounded flex items-center justify-center">
+                    <BarChart3 size={14} className="text-[#e0f2fe] dark:text-[#38bdf8]" strokeWidth={3} />
                   </div>
-                  <span className="text-[12px] font-bold text-[#EAD6C0] uppercase tracking-wider">{period.toUpperCase()}'S SALES</span>
+                  <span className="text-[12px] font-bold text-[#e0f2fe] dark:text-[#38bdf8] uppercase tracking-wider">{period.toUpperCase()}'S SALES</span>
                 </div>
                 <h2 className="text-5xl font-black mt-1 tracking-tighter tabular-nums">
                    {formatMoney(revenue).replace(/\.00$/, '')}
@@ -134,7 +127,7 @@ export function DesktopDashboard({ onGo }: { onGo: (v: string) => void }) {
               <div className="flex gap-8 mt-2 pl-8 border-l border-white/10">
                  <div className="flex items-center gap-3">
                    <div className="w-12 h-12 rounded-2xl bg-black/40 border border-white/5 flex items-center justify-center">
-                     <ShoppingBag size={22} className="text-[#EAD6C0]" strokeWidth={2.5} />
+                     <ShoppingBag size={22} className="text-[#e0f2fe] dark:text-[#38bdf8]" strokeWidth={2.5} />
                    </div>
                    <div className="flex flex-col">
                      <span className="text-2xl font-black text-white leading-tight tabular-nums">{numOrders}</span>
@@ -143,7 +136,7 @@ export function DesktopDashboard({ onGo }: { onGo: (v: string) => void }) {
                  </div>
                  <div className="flex items-center gap-3">
                    <div className="w-12 h-12 rounded-2xl bg-black/40 border border-white/5 flex items-center justify-center">
-                     <Receipt size={22} className="text-[#EAD6C0]" strokeWidth={2.5} />
+                     <Receipt size={22} className="text-[#e0f2fe] dark:text-[#38bdf8]" strokeWidth={2.5} />
                    </div>
                    <div className="flex flex-col">
                      <span className="text-2xl font-black text-white leading-tight tabular-nums">{formatMoney(avgBill).replace(/\.00$/, '')}</span>
@@ -160,7 +153,7 @@ export function DesktopDashboard({ onGo }: { onGo: (v: string) => void }) {
               period={period}
               densePeakHours={densePeakHours}
               denseWeekdays={denseWeekdays}
-              orders={orders}
+              orders={recentOrders}
             />
           </div>
 
@@ -168,8 +161,8 @@ export function DesktopDashboard({ onGo }: { onGo: (v: string) => void }) {
            <div className="desktop-card bg-card/60 backdrop-blur-md border border-border/80 px-8 py-6 shadow-sm cursor-pointer hover:border-primary/40 transition-all hover:scale-[1.01] active:scale-[0.99]" onClick={(e) => { e.stopPropagation(); setTopProductsOpen(true); }}>
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-2 text-muted-foreground">
-                  <TrendingUp size={20} className="text-primary dark:text-[#EAD6C0]" />
-                  <h3 className="text-lg font-bold text-foreground">Top Products</h3>
+                  <TrendingUp size={20} className="text-primary dark:text-[#e0f2fe] dark:text-[#38bdf8]" />
+                  <h3 className="text-lg font-bold text-foreground">Top Medicines</h3>
                 </div>
               </div>
               
@@ -180,7 +173,9 @@ export function DesktopDashboard({ onGo }: { onGo: (v: string) => void }) {
                    <div key={i} className="flex flex-col items-start gap-3 p-4 bg-background dark:bg-black/20 border border-border/50 rounded-2xl shadow-sm hover:scale-[1.02] transition-transform">
                      <div className="flex items-center justify-between w-full">
                         <span className="text-xs font-black text-muted-foreground">{String(i+1).padStart(2, '0')}</span>
-                        <div className="w-8 h-8 flex-none bg-muted rounded-full flex items-center justify-center text-xs shadow-sm">☕</div>
+                        <div className="w-8 h-8 flex-none bg-sky-50 dark:bg-slate-800 rounded-full flex items-center justify-center text-xs shadow-sm">
+                          <Pill size={14} className="text-sky-600 dark:text-sky-400" />
+                        </div>
                      </div>
                      <span className="text-sm font-bold text-foreground line-clamp-2 min-h-[40px]">{prod.name}</span>
                      <div className="border-t border-border/50 w-full pt-3 mt-auto flex items-center justify-between">
@@ -204,7 +199,7 @@ export function DesktopDashboard({ onGo }: { onGo: (v: string) => void }) {
           <div className="desktop-card bg-card/60 backdrop-blur-md border border-border/80 p-6 shadow-sm cursor-default" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <Clock size={18} className="text-primary dark:text-[#EAD6C0]" />
+                <Clock size={18} className="text-primary dark:text-[#e0f2fe] dark:text-[#38bdf8]" />
                 <h3 className="text-sm font-bold text-foreground">Peak Hour</h3>
               </div>
             </div>
@@ -221,7 +216,7 @@ export function DesktopDashboard({ onGo }: { onGo: (v: string) => void }) {
                    key={i} 
                    onMouseEnter={() => setActivePeakHour(h.hour)}
                    onClick={(e) => { e.stopPropagation(); setActivePeakHour(h.hour); }}
-                   className={`relative z-10 flex-1 rounded-t border-b-0 cursor-pointer transition-all ${((activePeakHour !== null ? h.hour === activePeakHour : h.orders === globalPeak?.orders) && (h.orders ?? 0) > 0) ? 'bg-[#110904] dark:bg-[#EAD6C0] scale-105' : 'bg-[#3E2009] dark:bg-white/20 hover:bg-[#2C1809]'}`} 
+                   className={`relative z-10 flex-1 rounded-t border-b-0 cursor-pointer transition-all ${((activePeakHour !== null ? h.hour === activePeakHour : h.orders === globalPeak?.orders) && (h.orders ?? 0) > 0) ? 'bg-sky-600 dark:bg-sky-400 scale-105' : 'bg-sky-200 dark:bg-slate-700 hover:bg-sky-300'}`} 
                    style={{ height: `${Math.max(10, (h.orders / maxHourOrders) * 100)}%` }} 
                  />
                ))}
@@ -232,7 +227,7 @@ export function DesktopDashboard({ onGo }: { onGo: (v: string) => void }) {
           <div className="desktop-card bg-card/60 backdrop-blur-md border border-border/80 p-6 shadow-sm" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-2 text-muted-foreground">
-                <CreditCard size={18} className="text-primary dark:text-[#EAD6C0]" />
+                <CreditCard size={18} className="text-primary dark:text-[#e0f2fe] dark:text-[#38bdf8]" />
                 <h3 className="text-sm font-bold text-foreground">Payment Mix</h3>
               </div>
             </div>
@@ -253,11 +248,11 @@ export function DesktopDashboard({ onGo }: { onGo: (v: string) => void }) {
               
               <div className="flex flex-col gap-3 flex-1 px-2 border-l border-border/50">
                 <div className="flex items-center justify-between gap-2 text-xs font-bold bg-background/50 p-2 rounded-lg">
-                  <span className="flex items-center gap-2 uppercase tracking-wide"><div className="w-2.5 h-2.5 rounded-full bg-[#EAD6C0]" /> UPI</span>
+                  <span className="flex items-center gap-2 uppercase tracking-wide"><div className="w-2.5 h-2.5 rounded-full bg-sky-400" /> UPI</span>
                   <span className="text-foreground">{upiPct}%</span>
                 </div>
                 <div className="flex items-center justify-between gap-2 text-xs font-bold bg-background/50 p-2 rounded-lg">
-                  <span className="flex items-center gap-2 uppercase tracking-wide"><div className="w-2.5 h-2.5 rounded-full bg-[#8A5A33]" /> Cash</span>
+                  <span className="flex items-center gap-2 uppercase tracking-wide"><div className="w-2.5 h-2.5 rounded-full bg-sky-700" /> Cash</span>
                   <span className="text-foreground">{cashPct}%</span>
                 </div>
               </div>
@@ -268,33 +263,27 @@ export function DesktopDashboard({ onGo }: { onGo: (v: string) => void }) {
           <div className="desktop-card bg-card/60 backdrop-blur-md border border-border/80 p-6 flex-1 flex flex-col shadow-sm cursor-pointer hover:border-primary/30 transition-colors" onClick={() => onGo('orders')}>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2 text-muted-foreground">
-                <Receipt size={18} className="text-primary dark:text-[#EAD6C0]" />
-                <h3 className="text-sm font-bold text-foreground">Recent Orders</h3>
+                <Receipt size={18} className="text-primary dark:text-[#e0f2fe] dark:text-[#38bdf8]" />
+                <h3 className="text-sm font-bold text-foreground">Recent Bills</h3>
               </div>
               <ArrowRight size={16} className="opacity-50" />
             </div>
             
             <div className="flex flex-col gap-3 flex-1 overflow-hidden pointer-events-none">
-              {orders.length === 0 ? (
-                 <div className="flex items-center justify-center h-full text-sm text-muted-foreground font-bold">No orders found</div>
-               ) : orders.slice(0, 5).map((order: any) => (
+              {recentOrders.length === 0 ? (
+                 <div className="flex items-center justify-center h-full text-sm text-muted-foreground font-bold">No bills found</div>
+               ) : recentOrders.slice(0, 5).map((order: any) => (
                 <div className="flex flex-col gap-2 p-3 bg-background/50 dark:bg-black/10 rounded-xl border border-border/40" key={order.id || order._id}>
                   <div className="flex items-center justify-between">
-                    <strong className="text-xs font-black text-foreground tracking-tight truncate">{
-                      (() => {
-                        const items = order.items || [];
-                        if (items.length === 0) return 'Order';
-                        const first = items[0];
-                        const label = `${first.quantity ?? 1} × ${first.name_snapshot ?? first.name ?? 'Item'}`;
-                        return items.length > 1 ? `${label} +${items.length - 1} more` : label;
-                      })()
-                    }</strong>
-                    <div className="bg-black text-white px-2 py-0.5 rounded text-[10px] font-black uppercase">
+                    <strong className="text-xs font-black text-foreground tracking-tight truncate">
+                      {order.invoiceNumber || order.id || 'INV'}
+                    </strong>
+                    <div className="bg-sky-600 text-white px-2 py-0.5 rounded text-[10px] font-black uppercase">
                       {order.status || 'Completed'}
                     </div>
                   </div>
                   <div className="flex items-center justify-between mt-1 pt-2 border-t border-border/40">
-                     <span className="text-xs font-medium text-muted-foreground">{order.items.length} item{order.items.length !== 1 ? 's' : ''}</span>
+                     <span className="text-xs font-medium text-muted-foreground">{order.paymentMethod || 'Paid'}</span>
                      <div className="flex items-center gap-3">
                        <span className="text-[10px] font-bold text-muted-foreground opacity-70">{formatTime(order.createdAt)}</span>
                        <strong className="text-sm font-black tabular-nums tracking-tighter">{formatMoney(order.grandTotal)}</strong>
@@ -331,7 +320,7 @@ function DesktopTopProductsModal({ onClose, currentPeriod }: { onClose: () => vo
       >
         <div className="flex items-center justify-between px-8 pt-8 pb-4 border-b border-border/40">
           <div className="flex items-center gap-3">
-             <TrendingUp className="text-primary dark:text-[#EAD6C0]" size={24} />
+             <TrendingUp className="text-primary dark:text-[#e0f2fe] dark:text-[#38bdf8]" size={24} />
              <h2 className="text-2xl font-black text-foreground tracking-tight">Top Products</h2>
           </div>
           <button className="p-2 bg-black/5 dark:bg-white/10 rounded-full hover:scale-105 active:scale-95 transition-transform" onClick={onClose}>
@@ -345,7 +334,7 @@ function DesktopTopProductsModal({ onClose, currentPeriod }: { onClose: () => vo
              {modalPeriods.map(item => (
                <button 
                  key={item} 
-                 className={`flex-1 h-10 rounded-lg text-xs font-black uppercase tracking-wider transition-all ${modalPeriod === item ? 'bg-[#2C1809] text-white dark:bg-[#EAD6C0] dark:text-[#1A1917] shadow-sm' : 'text-muted-foreground hover:bg-black/5 dark:hover:bg-white/5'}`} 
+                 className={`flex-1 h-10 rounded-lg text-xs font-black uppercase tracking-wider transition-all ${modalPeriod === item ? 'bg-[#0369a1] text-white dark:bg-[#38bdf8] dark:text-[#1A1917] shadow-sm' : 'text-muted-foreground hover:bg-black/5 dark:hover:bg-white/5'}`} 
                  onClick={() => setModalPeriod(item)}
                >
                  {item === 'today' ? 'Today' : item === 'week' ? 'Week' : item === 'month' ? 'Month' : 'All Time'}

@@ -10,7 +10,7 @@ import type { Product, Order, PaymentMethod } from '../../../types';
 import { AnimatedTicket } from '../../../components/ui/ticket-confirmation-card';
 import { ScrollArea, ScrollBar } from '../../../components/ui/scroll-area';
 
-const RECENT_KEY = 'tbt_recent_products';
+const RECENT_KEY = 'medbill_recent_products';
 const MAX_RECENT = 12;
 
 function getRecentIds(): string[] {
@@ -71,7 +71,16 @@ export function DesktopBilling() {
   const checkout = useMutation({
     mutationFn: async (pm: PaymentMethod) => {
       const dbOrder = await checkoutService.createOrder(
-        cartStore.items.map(i => ({ productId: i.id, quantity: i.quantity })),
+        cartStore.items.map(i => {
+          const m = i.dosageSchedule?.morning ?? 0;
+          const a = i.dosageSchedule?.afternoon ?? 0;
+          const n = i.dosageSchedule?.night ?? 0;
+          return {
+            productId: i.id,
+            quantity: i.quantity,
+            dosageSchedule: `${m}-${a}-${n}`,
+          };
+        }),
         pm
       );
       const uiOrder: Order = {
@@ -84,13 +93,19 @@ export function DesktopBilling() {
         grandTotal: dbOrder.total,
         paymentMethod: dbOrder.payment_method as any,
         createdAt: dbOrder.created_at,
-        items: cartStore.items.map(i => ({
-          productId: i.id,
-          name: i.name,
-          quantity: i.quantity,
-          unitPrice: i.price,
-          total: i.price * i.quantity
-        }))
+        items: cartStore.items.map(i => {
+          const m = i.dosageSchedule?.morning ?? 0;
+          const a = i.dosageSchedule?.afternoon ?? 0;
+          const n = i.dosageSchedule?.night ?? 0;
+          return {
+            productId: i.id,
+            name: i.name,
+            quantity: i.quantity,
+            unitPrice: i.price,
+            total: i.price * i.quantity,
+            dosageSchedule: `${m}-${a}-${n}`,
+          };
+        })
       };
       return uiOrder;
     },
@@ -128,7 +143,7 @@ export function DesktopBilling() {
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
             <input 
               type="text" 
-              placeholder="Search products..." 
+              placeholder="Search medicines, tablets, syrups..." 
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full pl-12 pr-4 py-3 rounded-2xl bg-black/5 dark:bg-white/5 border-none focus:ring-2 focus:ring-primary text-sm font-semibold transition-all"
@@ -242,32 +257,68 @@ export function DesktopBilling() {
             ) : (
               <div className="flex flex-col gap-3">
                 {cartStore.items.map(item => (
-                  <div key={item.id} className="flex items-center gap-3 bg-secondary/30 p-2.5 rounded-2xl border border-border/50 group hover:border-border transition-colors">
-                    {item.image_url ? (
-                       <img src={item.image_url} className="w-14 h-14 object-contain rounded-xl bg-background p-1.5 shadow-sm border border-border/30" />
-                    ) : (
-                       <div className="w-14 h-14 rounded-xl bg-background shadow-sm border border-border/30 flex items-center justify-center opacity-70">
-                         <ShoppingCart size={20}/>
-                       </div>
-                    )}
-                    <div className="flex-1 overflow-hidden pr-2">
-                      <h4 className="text-sm font-bold truncate leading-tight mb-0.5">{item.name}</h4>
-                      <span className="text-xs font-black text-primary/80">₹{item.price}</span>
+                  <div key={item.id} className="flex flex-col gap-2 bg-secondary/30 p-2.5 rounded-2xl border border-border/50 group hover:border-border transition-colors">
+                    <div className="flex items-center gap-3">
+                      {item.image_url ? (
+                         <img src={item.image_url} className="w-12 h-12 object-contain rounded-xl bg-background p-1.5 shadow-sm border border-border/30" />
+                      ) : (
+                         <div className="w-12 h-12 rounded-xl bg-background shadow-sm border border-border/30 flex items-center justify-center opacity-70">
+                           <ShoppingCart size={18}/>
+                         </div>
+                      )}
+                      <div className="flex-1 overflow-hidden pr-2">
+                        <h4 className="text-sm font-bold truncate leading-tight mb-0.5">{item.name}</h4>
+                        <span className="text-xs font-black text-primary/80">₹{item.price}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 bg-background rounded-full p-1 border border-border">
+                        <button 
+                          onClick={() => cartStore.updateQuantity(item.id, -1)}
+                          className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-destructive/10 hover:text-destructive transition-colors text-muted-foreground"
+                        >
+                          {item.quantity <= 1 ? <Trash2 size={14} /> : <Minus size={14} />}
+                        </button>
+                        <span className="w-4 text-center text-sm font-black">{item.quantity}</span>
+                        <button 
+                          onClick={() => cartStore.updateQuantity(item.id, 1)}
+                          className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-primary/10 hover:text-primary transition-colors text-muted-foreground"
+                        >
+                          <Plus size={14} />
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1.5 bg-background rounded-full p-1 border border-border">
-                      <button 
-                        onClick={() => cartStore.updateQuantity(item.id, -1)}
-                        className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-destructive/10 hover:text-destructive transition-colors text-muted-foreground"
-                      >
-                        {item.quantity <= 1 ? <Trash2 size={14} /> : <Minus size={14} />}
-                      </button>
-                      <span className="w-4 text-center text-sm font-black">{item.quantity}</span>
-                      <button 
-                        onClick={() => cartStore.updateQuantity(item.id, 1)}
-                        className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-primary/10 hover:text-primary transition-colors text-muted-foreground"
-                      >
-                        <Plus size={14} />
-                      </button>
+
+                    {/* Dosage Schedule: Morning (M), Afternoon (A), Night (N) */}
+                    <div className="flex items-center justify-between bg-background/80 px-2 py-1.5 rounded-xl border border-border/40">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] font-black text-muted-foreground uppercase tracking-wider mr-1">Dose:</span>
+                        {(['morning', 'afternoon', 'night'] as const).map(period => {
+                          const label = period === 'morning' ? 'Morning (M)' : period === 'afternoon' ? 'Afternoon (A)' : 'Night (N)';
+                          const short = period === 'morning' ? 'M' : period === 'afternoon' ? 'A' : 'N';
+                          const val = item.dosageSchedule?.[period] ?? 0;
+                          const isActive = val === 1;
+                          return (
+                            <button
+                              key={period}
+                              type="button"
+                              title={label}
+                              onClick={() => cartStore.toggleDosage(item.id, period)}
+                              className={`px-2 py-0.5 text-xs font-black rounded-lg transition-all flex items-center gap-1 border active:scale-95 ${
+                                isActive
+                                  ? 'bg-[#0284c7] text-white border-[#0284c7] shadow-xs'
+                                  : 'bg-muted/40 text-muted-foreground hover:bg-muted border-border/50'
+                              }`}
+                            >
+                              <span>{short}</span>
+                              <span className={`text-[10px] px-1 rounded font-mono ${isActive ? 'bg-white/25 text-white' : 'bg-secondary text-foreground'}`}>
+                                {val}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <span className="font-mono font-black text-[11px] text-primary">
+                        {`${item.dosageSchedule?.morning ?? 0}-${item.dosageSchedule?.afternoon ?? 0}-${item.dosageSchedule?.night ?? 0}`}
+                      </span>
                     </div>
                   </div>
                 ))}
@@ -296,7 +347,7 @@ export function DesktopBilling() {
             <button
               disabled={cartStore.items.length === 0 || checkout.isPending}
               onClick={() => checkout.mutate('UPI')}
-              className="flex-[1.5] bg-gradient-to-br from-[#3E2009] to-[#8E4A1C] text-white shadow-xl hover:opacity-90 disabled:opacity-50 h-14 rounded-2xl font-black text-xl flex items-center justify-center gap-2 transition-all active:scale-95"
+              className="flex-[1.5] bg-gradient-to-br from-[#0284c7] to-[#0369a1] text-white shadow-xl hover:opacity-90 disabled:opacity-50 h-14 rounded-2xl font-black text-xl flex items-center justify-center gap-2 transition-all active:scale-95"
             >
               {checkout.isPending ? <Loader2 size={24} className="animate-spin" /> : <CreditCard size={24} />}
               UPI

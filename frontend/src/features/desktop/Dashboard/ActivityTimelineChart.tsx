@@ -19,11 +19,11 @@ import { formatMoney } from "../../../utils/format"
 const chartConfig = {
   revenue: {
     label: "Revenue",
-    color: "#8A5A33",
+    color: "#0284c7",
   },
   orders: {
     label: "Orders",
-    color: "#C9956A",
+    color: "#38bdf8",
   },
 } satisfies ChartConfig
 
@@ -76,6 +76,7 @@ const descriptions: Record<string, string> = {
   today: "Hourly sales · 24 Hours",
   week: "Sales by weekday · last 7 days",
   month: "Sales by weekday · last 30 days",
+  all: "Sales by weekday · All Time",
 }
 
 export function ActivityTimelineChart({
@@ -125,7 +126,7 @@ export function ActivityTimelineChart({
       <CardHeader className="flex flex-col items-stretch gap-0 border-b border-border/40 p-0 sm:flex-row">
         <div className="flex flex-1 flex-col justify-center gap-1 px-6 py-5 sm:py-6">
           <CardTitle className="flex items-center gap-2 text-lg font-bold tracking-tight text-foreground">
-            <BarChart3 size={20} className="text-primary dark:text-[#EAD6C0]" />
+            <BarChart3 size={20} className="text-primary dark:text-[#38bdf8]" />
             Activity Timeline
           </CardTitle>
           <CardDescription className="text-[13px] font-semibold">
