@@ -49,3 +49,7 @@ android/app/build/
 ios/App/App/build/
 android/app/build.gradle.local
 android/.gradle
+
+# Project cleanup
+to_delete/
+.gemini/
