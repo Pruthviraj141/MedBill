@@ -169,27 +169,31 @@ const AnimatedTicketContent = React.forwardRef<HTMLDivElement, { order: Order }>
                       </div>
                   </div>
 
-                  {order.items && order.items.length > 0 && (
-                    <div className="space-y-2 pt-1 text-left">
-                      <div className="flex items-center justify-between">
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Medicines & Dosage</p>
-                        <span className="text-[9px] text-sky-600 dark:text-sky-400 font-semibold">(M - A - N)</span>
-                      </div>
-                      <div className="space-y-1.5 max-h-36 overflow-y-auto no-scrollbar">
-                        {order.items.map((it, idx) => (
-                          <div key={idx} className="flex items-center justify-between py-1.5 px-2.5 rounded-lg bg-muted/30 border border-border/30 text-xs">
-                            <div className="flex flex-col min-w-0 pr-2">
-                              <span className="font-bold text-foreground truncate">{it.name} <span className="text-muted-foreground font-normal">x{it.quantity}</span></span>
-                              <span className="text-[10px] text-muted-foreground">M: Morn | A: Aft | N: Night</span>
+                  {(() => {
+                    const activeDosageItems = (order.items || []).filter(it => it.dosageSchedule && it.dosageSchedule.includes('1'));
+                    if (activeDosageItems.length === 0) return null;
+                    return (
+                      <div className="space-y-2 pt-1 text-left">
+                        <div className="flex items-center justify-between">
+                          <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Medicines & Dosage</p>
+                          <span className="text-[9px] text-emerald-600 dark:text-emerald-400 font-bold">(M - A - N)</span>
+                        </div>
+                        <div className="space-y-1.5 max-h-36 overflow-y-auto no-scrollbar">
+                          {activeDosageItems.map((it, idx) => (
+                            <div key={idx} className="flex items-center justify-between py-1.5 px-2.5 rounded-xl bg-muted/40 border border-border/40 text-xs">
+                              <div className="flex flex-col min-w-0 pr-2">
+                                <span className="font-bold text-foreground truncate">{it.name} <span className="text-muted-foreground font-normal">x{it.quantity}</span></span>
+                                <span className="text-[10px] text-muted-foreground">M: Morn | A: Aft | N: Night</span>
+                              </div>
+                              <span className="px-2 py-0.5 rounded-lg font-mono font-black text-[12px] bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 shrink-0">
+                                {it.dosageSchedule}
+                              </span>
                             </div>
-                            <span className="px-2 py-0.5 rounded font-mono font-black text-[12px] bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800 shrink-0">
-                              {it.dosageSchedule || '0-0-0'}
-                            </span>
-                          </div>
-                        ))}
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    );
+                  })()}
 
                   <DashedLine />
 

@@ -297,37 +297,81 @@ export function Billing() {
                       </div>
 
                       {/* Medicine Dosage Schedule: Morning (M), Afternoon (A), Night (N) */}
-                      <div className="flex items-center justify-between bg-muted/40 px-2.5 py-1.5 rounded-xl border border-border/30">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[11px] font-black text-muted-foreground uppercase tracking-wider mr-1">Dose:</span>
-                          {(['morning', 'afternoon', 'night'] as const).map(period => {
-                            const label = period === 'morning' ? 'Morning (M)' : period === 'afternoon' ? 'Afternoon (A)' : 'Night (N)';
-                            const short = period === 'morning' ? 'M' : period === 'afternoon' ? 'A' : 'N';
-                            const val = item.dosageSchedule?.[period] ?? 0;
-                            const isActive = val === 1;
-                            return (
-                              <button
-                                key={period}
-                                type="button"
-                                title={label}
-                                onClick={() => toggleDosage(item.id, period)}
-                                className={`px-2.5 py-1 text-xs font-black rounded-lg transition-all flex items-center gap-1 border active:scale-95 ${
-                                  isActive
-                                    ? 'bg-[#0284c7] text-white border-[#0284c7] shadow-sm'
-                                    : 'bg-background text-muted-foreground hover:bg-muted border-border/60'
-                                }`}
-                              >
-                                <span>{short}</span>
-                                <span className={`text-[10px] px-1 rounded font-mono ${isActive ? 'bg-white/25 text-white' : 'bg-muted text-foreground'}`}>
-                                  {val}
-                                </span>
-                              </button>
-                            );
-                          })}
+                      <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/40 gap-2">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-muted-foreground/80 shrink-0">
+                            Dose:
+                          </span>
+                          <div className="inline-flex items-center gap-1 bg-background/80 p-0.5 rounded-xl border border-border/50">
+                            {([
+                              {
+                                key: 'morning' as const,
+                                label: 'Morning (M)',
+                                short: 'M',
+                                activeBg: 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-sm ring-1 ring-amber-400/40',
+                                activeTag: 'bg-amber-700/50 text-white',
+                                inactiveBg: 'bg-amber-500/10 text-amber-800 dark:text-amber-300 border-amber-300/40 hover:bg-amber-500/20',
+                                inactiveTag: 'bg-amber-500/15 text-amber-700 dark:text-amber-400',
+                              },
+                              {
+                                key: 'afternoon' as const,
+                                label: 'Afternoon (A)',
+                                short: 'A',
+                                activeBg: 'bg-gradient-to-r from-sky-500 to-sky-600 text-white shadow-sm ring-1 ring-sky-400/40',
+                                activeTag: 'bg-sky-700/50 text-white',
+                                inactiveBg: 'bg-sky-500/10 text-sky-800 dark:text-sky-300 border-sky-300/40 hover:bg-sky-500/20',
+                                inactiveTag: 'bg-sky-500/15 text-sky-700 dark:text-sky-400',
+                              },
+                              {
+                                key: 'night' as const,
+                                label: 'Night (N)',
+                                short: 'N',
+                                activeBg: 'bg-gradient-to-r from-indigo-500 to-indigo-600 text-white shadow-sm ring-1 ring-indigo-400/40',
+                                activeTag: 'bg-indigo-700/50 text-white',
+                                inactiveBg: 'bg-indigo-500/10 text-indigo-800 dark:text-indigo-300 border-indigo-300/40 hover:bg-indigo-500/20',
+                                inactiveTag: 'bg-indigo-500/15 text-indigo-700 dark:text-indigo-400',
+                              },
+                            ]).map((period) => {
+                              const val = item.dosageSchedule?.[period.key] ?? 0;
+                              const isActive = val === 1;
+                              return (
+                                <button
+                                  key={period.key}
+                                  type="button"
+                                  title={period.label}
+                                  onClick={() => toggleDosage(item.id, period.key)}
+                                  className={`h-7 px-2 rounded-lg text-xs font-black transition-all flex items-center gap-1.5 border active:scale-95 ${
+                                    isActive ? period.activeBg : period.inactiveBg
+                                  }`}
+                                >
+                                  <span className="text-[11px] font-black">{period.short}</span>
+                                  <span className={`text-[10px] w-3.5 h-3.5 rounded flex items-center justify-center font-mono font-black ${
+                                    isActive ? period.activeTag : period.inactiveTag
+                                  }`}>
+                                    {val}
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
                         </div>
-                        <span className="font-mono font-black text-[12px] text-primary">
-                          {`${item.dosageSchedule?.morning ?? 0}-${item.dosageSchedule?.afternoon ?? 0}-${item.dosageSchedule?.night ?? 0}`}
-                        </span>
+
+                        {/* Live Schedule Badge */}
+                        {(() => {
+                          const m = item.dosageSchedule?.morning ?? 0;
+                          const a = item.dosageSchedule?.afternoon ?? 0;
+                          const n = item.dosageSchedule?.night ?? 0;
+                          const hasDosage = m === 1 || a === 1 || n === 1;
+                          return (
+                            <span className={`text-[11px] font-mono font-black px-2 py-0.5 rounded-lg border transition-all shrink-0 ${
+                              hasDosage
+                                ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 shadow-xs'
+                                : 'bg-muted/40 text-muted-foreground/60 border-transparent'
+                            }`}>
+                              {hasDosage ? `${m}-${a}-${n}` : 'No dose'}
+                            </span>
+                          );
+                        })()}
                       </div>
                     </div>
                   ))}

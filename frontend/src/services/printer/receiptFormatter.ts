@@ -126,7 +126,11 @@ export class ReceiptFormatter {
     this.escpos.textLine("");
 
     // 7. Dosage Schedule (below Payment info)
-    const dosageItems = this.doc.items.filter(i => Boolean(i.dosageSchedule));
+    // Only print medicines where at least one dosage period is active (e.g. 1-0-0, 0-1-0, 1-0-1)
+    const dosageItems = this.doc.items.filter(i => {
+      const d = i.dosageSchedule;
+      return Boolean(d && d.includes('1'));
+    });
     if (dosageItems.length > 0) {
       this.drawSeparator();
       this.escpos.boldOn();
