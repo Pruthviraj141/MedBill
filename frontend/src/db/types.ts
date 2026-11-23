@@ -31,6 +31,7 @@ export interface OrderItem {
   unit_price: number;
   quantity: number;
   line_total: number;
+  dosage_schedule?: string;
 }
 
 export interface SyncQueue {

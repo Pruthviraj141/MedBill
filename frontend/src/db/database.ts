@@ -2,7 +2,7 @@ import { CapacitorSQLite, SQLiteConnection, SQLiteDBConnection } from '@capacito
 import { Capacitor } from '@capacitor/core';
 import { sqliteMigrations } from './migrations';
 
-const DB_NAME = 'tbt_cafe_pos_db';
+const DB_NAME = 'medbill_pos_db';
 let sqliteConnection: SQLiteConnection;
 let db: SQLiteDBConnection;
 let isInitialized = false;

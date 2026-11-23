@@ -61,5 +61,11 @@ export const sqliteMigrations = [
     query: `
       ALTER TABLE orders ADD COLUMN synced_at TEXT;
     `
+  },
+  {
+    version: 3,
+    query: `
+      ALTER TABLE order_items ADD COLUMN dosage_schedule TEXT DEFAULT '0-0-0';
+    `
   }
 ];
