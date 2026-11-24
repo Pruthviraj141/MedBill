@@ -46,8 +46,17 @@ export function Dashboard({ onGo }: { onGo: (view: string) => void }) {
   const donutGradient = getDonutGradient(validPaymentsTotal, upiPct, cashPct);
 
   return (
-    <div className="flex flex-col w-full h-full pb-24 px-4 bg-slate-50 dark:bg-slate-950 animate-in fade-in slide-in-from-bottom-4 duration-500 overflow-y-auto no-scrollbar pt-2 font-sans tracking-tight" onClick={() => setActivePeakHour(null)}>
+    <div className="flex flex-col w-full h-full pb-24 px-4 bg-slate-50 dark:bg-slate-950 animate-in fade-in slide-from-bottom-4 duration-500 overflow-y-auto no-scrollbar pt-2 font-sans tracking-tight" onClick={() => setActivePeakHour(null)}>
       
+      {/* System Owner Tag */}
+      <div className="flex items-center justify-between px-3 py-1.5 mb-2.5 bg-sky-50/80 dark:bg-sky-950/40 rounded-xl border border-sky-200/60 dark:border-sky-800/60 text-[11px]">
+        <div className="flex items-center gap-1.5 font-bold text-sky-800 dark:text-sky-200">
+          <Sparkles size={12} className="text-sky-500" />
+          <span>Pharmacy Analytics</span>
+        </div>
+        <span className="font-extrabold text-sky-700 dark:text-sky-300">@Rudra Info Tech</span>
+      </div>
+
       {/* Top Main Date Filter */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-1 bg-white dark:bg-slate-900 p-1 rounded-full border border-slate-200 dark:border-slate-800 shadow-sm flex-1 relative overflow-x-auto no-scrollbar" onClick={(e) => e.stopPropagation()}>

@@ -1,5 +1,5 @@
 import React, { lazy, Suspense, useState, useEffect } from 'react';
-import { Home, Receipt, ShoppingBag, Settings, LogIn, Database, Eye } from 'lucide-react';
+import { Home, Receipt, ShoppingBag, Settings, LogIn, Database, Eye, Sparkles } from 'lucide-react';
 import logoSrc from '../assets/logo.png';
 import '../stores/themeStore'; // initialize theme on load
 import { initDB } from '../db/database';
@@ -137,9 +137,28 @@ export function App() {
 
   if (!dbReady) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[100dvh] bg-background text-foreground gap-4">
-        <div className="w-12 h-12 rounded-full border-4 border-primary/30 border-t-primary animate-spin" />
-        <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground">Initializing Database</p>
+      <div className="flex flex-col items-center justify-center min-h-[100dvh] bg-background text-foreground p-6 text-center select-none animate-in fade-in duration-300">
+        <div className="relative mb-5">
+          <img src={logoSrc} alt="MedBill" className="w-20 h-20 rounded-3xl object-cover shadow-2xl bg-primary border-2 border-white/20" />
+          <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-emerald-500 border-2 border-background flex items-center justify-center text-[10px] text-white font-bold">
+            ✓
+          </div>
+        </div>
+        <h1 className="text-2xl font-black tracking-tight text-foreground">MEDBILL</h1>
+        <p className="text-xs font-black tracking-[0.25em] text-emerald-600 dark:text-emerald-400 uppercase mt-1">PHARMACY POS</p>
+        
+        <div className="mt-8 flex flex-col items-center gap-3">
+          <div className="w-10 h-10 rounded-full border-3 border-primary/30 border-t-primary animate-spin" />
+          <p className="text-xs font-bold tracking-widest uppercase text-muted-foreground">Initializing Engine...</p>
+        </div>
+
+        <div className="mt-12 flex flex-col items-center gap-1.5 pt-6 border-t border-border/40 w-full max-w-xs">
+          <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/80">System Owner</span>
+          <div className="flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-sky-50 dark:bg-sky-950/70 border border-sky-300/80 dark:border-sky-800 text-sky-700 dark:text-sky-300 font-black text-xs shadow-xs">
+            <Sparkles size={13} className="text-sky-500" />
+            @Rudra Info Tech
+          </div>
+        </div>
       </div>
     );
   }
@@ -160,7 +179,12 @@ export function App() {
         <div className="flex items-center gap-3">
           <img src={logoSrc} alt="MedBill" className="w-10 h-10 rounded-xl object-cover shadow-sm bg-primary" />
           <div className="flex flex-col">
-            <strong className="text-sm font-bold leading-tight tracking-tight text-foreground">MEDBILL</strong>
+            <div className="flex items-center gap-1.5">
+              <strong className="text-sm font-black leading-tight tracking-tight text-foreground">MEDBILL</strong>
+              <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-md bg-sky-100/90 dark:bg-sky-950/90 text-sky-700 dark:text-sky-300 border border-sky-300/60 dark:border-sky-800 shadow-2xs">
+                @Rudra Info Tech
+              </span>
+            </div>
             <span className="text-[10px] font-black tracking-widest text-emerald-600 dark:text-emerald-400 uppercase mt-0.5">PHARMACY POS</span>
           </div>
         </div>
@@ -210,6 +234,10 @@ export function App() {
           {view === 'preview' && <RecentReceiptPreview onBack={() => setView('billing')} />}
         </Suspense>
       </main>
+
+      <footer className="w-full text-center py-1.5 text-[10px] font-medium text-muted-foreground/80 pointer-events-none">
+        MedBill POS • Owned & Crafted by <strong className="text-sky-600 dark:text-sky-400 font-bold">@Rudra Info Tech</strong>
+      </footer>
 
       <nav className="fixed bottom-0 left-0 right-0 z-30 flex items-center justify-around h-16 pb-[env(safe-area-inset-bottom)] bg-background/95 backdrop-blur-lg border-t border-border shadow-[0_-4px_16px_rgba(0,0,0,0.03)] dark:shadow-[0_-4px_16px_rgba(0,0,0,0.4)]">
         <NavItem active={view === 'billing'} icon={<Receipt size={22}/>} label="Billing" onClick={() => setView('billing')} />

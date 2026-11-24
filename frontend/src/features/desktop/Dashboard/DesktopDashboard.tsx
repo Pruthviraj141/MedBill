@@ -62,7 +62,7 @@ export function DesktopDashboard({ onGo }: { onGo: (v: string) => void }) {
         <div>
           <h1 className="text-3xl font-black tracking-tight text-foreground">Overview</h1>
           <p className="text-muted-foreground font-semibold mt-1 flex items-center gap-2">
-            Business Performance
+            <span>Pharmacy Analytics • Managed by <strong className="text-sky-600 dark:text-sky-400">@Rudra Info Tech</strong></span>
             <button 
               className="p-1.5 hover:bg-black/5 dark:hover:bg-white/10 rounded-full active:scale-95 transition-all text-muted-foreground" 
               onClick={async (e) => {

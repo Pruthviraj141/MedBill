@@ -1,5 +1,5 @@
 import React, { lazy, Suspense } from 'react';
-import { Home, Receipt, ShoppingBag, Settings, Eye } from 'lucide-react';
+import { Home, Receipt, ShoppingBag, Settings, Eye, Sparkles } from 'lucide-react';
 import logoSrc from '../../assets/logo.png';
 import './desktop-theme.css';
 
@@ -39,7 +39,13 @@ export function DesktopApp({ view, setView, isOffline, onSwitchToMobile }: Deskt
         <div className="flex items-center gap-4">
           <img src={logoSrc} alt="MedBill" className="w-12 h-12 rounded-2xl object-cover shadow-sm bg-primary" />
           <div className="flex flex-col">
-            <strong className="text-lg font-black leading-tight tracking-tight text-foreground">MEDBILL PHARMACY</strong>
+            <div className="flex items-center gap-2">
+              <strong className="text-lg font-black leading-tight tracking-tight text-foreground">MEDBILL PHARMACY</strong>
+              <span className="text-[11px] font-extrabold px-2.5 py-0.5 rounded-full bg-sky-100 dark:bg-sky-950/80 text-sky-700 dark:text-sky-300 border border-sky-300/60 dark:border-sky-800 shadow-2xs flex items-center gap-1">
+                <Sparkles size={12} className="text-sky-500" />
+                Owner: @Rudra Info Tech
+              </span>
+            </div>
             <span className="text-[12px] font-black tracking-[0.2em] text-emerald-600 dark:text-emerald-400 uppercase mt-0.5">MEDICAL POS</span>
           </div>
         </div>
@@ -84,6 +90,9 @@ export function DesktopApp({ view, setView, isOffline, onSwitchToMobile }: Deskt
           {view === 'settings' && <DesktopSettings setView={setView} />}
           {view === 'products' && <Products />}
         </Suspense>
+        <footer className="w-full text-center py-4 text-xs font-semibold text-muted-foreground/70">
+          MedBill Pharmacy POS • System Owned & Supported by <strong className="text-sky-600 dark:text-sky-400 font-bold">@Rudra Info Tech</strong>
+        </footer>
       </main>
 
       {/* Premium Bottom Navigation */}

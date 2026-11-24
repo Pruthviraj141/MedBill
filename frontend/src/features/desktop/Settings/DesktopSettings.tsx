@@ -1,6 +1,6 @@
 import React from 'react';
 import { useThemeStore } from '../../../stores/themeStore';
-import { Moon, Sun, Settings, Database, Cloud, Printer, RefreshCw, Store } from 'lucide-react';
+import { Moon, Sun, Settings, Database, Cloud, Printer, RefreshCw, Store, Sparkles, ShieldCheck } from 'lucide-react';
 import { printerService } from '../../../services/printer/printerService';
 import { printQueue } from '../../../services/printer/printQueue';
 import { Order } from '../../../types';
@@ -152,6 +152,18 @@ export function DesktopSettings({ setView }: { setView?: (v: string) => void }) 
                Manage Medicine Catalog
                <Store size={18} className="text-primary" />
             </button>
+            <div className="pt-2 border-t border-border/40">
+              <div className="flex items-center justify-between p-3 rounded-xl bg-sky-50/70 dark:bg-sky-950/50 border border-sky-200 dark:border-sky-800">
+                <div className="flex items-center gap-2.5">
+                  <Sparkles size={16} className="text-sky-600 dark:text-sky-400" />
+                  <div>
+                    <div className="text-[10px] uppercase font-black tracking-wider text-muted-foreground">Product Owner</div>
+                    <div className="text-xs font-black text-sky-800 dark:text-sky-200">@Rudra Info Tech</div>
+                  </div>
+                </div>
+                <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-300 dark:border-emerald-800">Production</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>

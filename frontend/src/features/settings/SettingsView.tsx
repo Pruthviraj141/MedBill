@@ -78,11 +78,12 @@ export function SettingsView() {
         </>
       )}
 
-      <h2 style={{ fontSize: 13, fontWeight: 800, color: 'var(--bl-muted)', textTransform: 'uppercase', letterSpacing: 0.5, margin: '24px 0 10px 4px' }}>System</h2>
+      <h2 style={{ fontSize: 13, fontWeight: 800, color: 'var(--bl-muted)', textTransform: 'uppercase', letterSpacing: 0.5, margin: '24px 0 10px 4px' }}>System & Ownership</h2>
       
       <div className="bl-card" style={{ display: 'flex', flexDirection: 'column' }}>
-        <SettingRow icon={<RefreshCw size={18} />} title="Sync Status" desc="Last synced: 2 mins ago" />
-        <SettingRow icon={<Info size={18} />} title="About POS" desc="Version 2.1.0" isLast={true} />
+        <SettingRow icon={<Building2 size={18} />} title="Owner" desc="@Rudra Info Tech" />
+        <SettingRow icon={<RefreshCw size={18} />} title="Sync Status" desc="Cloud & Edge Sync Active" />
+        <SettingRow icon={<Info size={18} />} title="About MedBill POS" desc="Version 1.0.0 Production • @Rudra Info Tech" isLast={true} />
       </div>
       
       <div style={{ height: 20 }} />
