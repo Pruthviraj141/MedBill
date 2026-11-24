@@ -268,15 +268,16 @@ const AnimatedTicket = ({
                     </>
                 )}
             </button>
-            <a
-              href="http://127.0.0.1:28080/preview"
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              onClick={() => {
+                window.location.hash = '#preview';
+                window.dispatchEvent(new Event('hashchange'));
+              }}
               className="w-full h-11 rounded-2xl flex items-center justify-center gap-2 bg-sky-50 dark:bg-slate-800 text-sky-700 dark:text-sky-300 font-bold text-xs border border-sky-200 dark:border-slate-700 hover:bg-sky-100 active:scale-[0.98] transition-all"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
-              View 58mm Thermal Preview (127.0.0.1:28080/preview)
-            </a>
+              View Recent Bill Preview (In-App & 127.0.0.1:28080)
+            </button>
             <button 
                 onClick={onNewBill}
                 className="w-full h-14 rounded-2xl bg-gradient-to-br from-[#0284c7] to-[#0369a1] text-white text-[15px] font-black shadow-lg hover:shadow-xl active:scale-[0.98] transition-all tracking-wide"

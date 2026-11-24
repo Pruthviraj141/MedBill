@@ -1,5 +1,5 @@
 import React, { lazy, Suspense } from 'react';
-import { Home, Receipt, ShoppingBag, Settings } from 'lucide-react';
+import { Home, Receipt, ShoppingBag, Settings, Eye } from 'lucide-react';
 import logoSrc from '../../assets/logo.png';
 import './desktop-theme.css';
 
@@ -8,6 +8,7 @@ const DesktopDashboard = lazy(() => import('./Dashboard/DesktopDashboard').then(
 const DesktopOrders = lazy(() => import('./Orders/DesktopOrders').then((module) => ({ default: module.DesktopOrders })));
 const DesktopSettings = lazy(() => import('./Settings/DesktopSettings').then((module) => ({ default: module.DesktopSettings })));
 const Products = lazy(() => import('../products/Products').then((module) => ({ default: module.Products })));
+const RecentReceiptPreview = lazy(() => import('../preview/RecentReceiptPreview').then((module) => ({ default: module.RecentReceiptPreview })));
 
 interface DesktopAppProps {
   view: string;
@@ -43,6 +44,17 @@ export function DesktopApp({ view, setView, isOffline, onSwitchToMobile }: Deskt
           </div>
         </div>
         <div className="flex items-center gap-4">
+          <button
+            onClick={() => setView('preview')}
+            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-full border text-xs font-black active:scale-95 transition-all shadow-xs ${
+              view === 'preview'
+                ? 'border-sky-500 bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-300'
+                : 'border-slate-300 dark:border-slate-700 bg-card hover:bg-muted text-foreground'
+            }`}
+            title="Recent Bill Preview (Virtual Receipt)"
+          >
+            📄 Recent Bill
+          </button>
           {onSwitchToMobile && (
             <button
               onClick={onSwitchToMobile}
@@ -66,6 +78,7 @@ export function DesktopApp({ view, setView, isOffline, onSwitchToMobile }: Deskt
       <main className="flex-1 w-full max-w-[1600px] mx-auto p-6 overflow-y-auto w-full">
         <Suspense fallback={<div className="p-8 space-y-4"><div className="w-full h-40 rounded-3xl bg-muted animate-pulse" /></div>}>
           {view === 'billing' && <DesktopBilling />}
+          {view === 'preview' && <RecentReceiptPreview onBack={() => setView('billing')} />}
           {view === 'home' && <DesktopDashboard onGo={setView} />}
           {view === 'orders' && <DesktopOrders />}
           {view === 'settings' && <DesktopSettings setView={setView} />}
@@ -76,6 +89,7 @@ export function DesktopApp({ view, setView, isOffline, onSwitchToMobile }: Deskt
       {/* Premium Bottom Navigation */}
       <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 z-30 flex items-center justify-center gap-4 px-6 h-[88px] bg-background/95 backdrop-blur-xl border border-border/60 shadow-[0_12px_40px_rgba(0,0,0,0.12)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.5)] rounded-[32px]">
         <DesktopNavItem active={view === 'billing'} icon={<Receipt size={24} strokeWidth={2.5} />} label="Billing" onClick={() => setView('billing')} />
+        <DesktopNavItem active={view === 'preview'} icon={<Eye size={24} strokeWidth={2.5} />} label="Preview" onClick={() => setView('preview')} />
         <DesktopNavItem active={view === 'home'} icon={<Home size={24} strokeWidth={2.5} />} label="Dashboard" onClick={() => setView('home')} />
         <DesktopNavItem active={view === 'orders'} icon={<ShoppingBag size={24} strokeWidth={2.5} />} label="Orders" onClick={() => setView('orders')} />
         <DesktopNavItem active={view === 'settings'} icon={<Settings size={24} strokeWidth={2.5} />} label="Settings" onClick={() => setView('settings')} />

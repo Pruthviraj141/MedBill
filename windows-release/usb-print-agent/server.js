@@ -252,6 +252,15 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', service: 'medbill-usb-agent' });
 });
 
+app.get('/api/latest-receipt', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    service: 'medbill-usb-agent',
+    html: lastVirtualReceipt,
+    timestamp: Date.now()
+  });
+});
+
 app.get('/preview', (req, res) => {
   res.setHeader('Content-Type', 'text/html');
   res.status(200).send(lastVirtualReceipt);

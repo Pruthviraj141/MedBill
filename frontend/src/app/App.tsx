@@ -1,5 +1,5 @@
 import React, { lazy, Suspense, useState, useEffect } from 'react';
-import { Home, Receipt, ShoppingBag, Settings, LogIn, Database } from 'lucide-react';
+import { Home, Receipt, ShoppingBag, Settings, LogIn, Database, Eye } from 'lucide-react';
 import logoSrc from '../assets/logo.png';
 import '../stores/themeStore'; // initialize theme on load
 import { initDB } from '../db/database';
@@ -14,6 +14,7 @@ const Orders = lazy(() => import('../features/orders/Orders').then((module) => (
 const Products = lazy(() => import('../features/products/Products').then((module) => ({ default: module.Products })));
 const SettingsView = lazy(() => import('../features/settings/SettingsView').then((module) => ({ default: module.SettingsView })));
 const DesktopApp = lazy(() => import('../features/desktop/DesktopApp').then((module) => ({ default: module.DesktopApp })));
+const RecentReceiptPreview = lazy(() => import('../features/preview/RecentReceiptPreview').then((module) => ({ default: module.RecentReceiptPreview })));
 
 import { Capacitor } from '@capacitor/core';
 
@@ -32,7 +33,14 @@ function NavItem({ active, icon, label, onClick }: { active: boolean; icon: Reac
 }
 
 export function App() {
-  const [view, setView] = useState('billing');
+  const [view, setView] = useState(() => {
+    if (typeof window === 'undefined') return 'billing';
+    const params = new URLSearchParams(window.location.search);
+    const v = params.get('view');
+    if (v) return v;
+    if (window.location.pathname === '/preview' || window.location.hash === '#preview') return 'preview';
+    return 'billing';
+  });
   const [isOffline, setIsOffline] = useState(false);
   const [dbReady, setDbReady] = useState(false);
   const [dbError, setDbError] = useState('');
@@ -42,6 +50,24 @@ export function App() {
     return params.get('mode') || (params.has('mobile') ? 'mobile' : 'auto');
   });
   const [windowWidth, setWindowWidth] = useState(() => (typeof window !== 'undefined' ? window.innerWidth : 1200));
+
+  useEffect(() => {
+    const handleUrlChange = () => {
+      const params = new URLSearchParams(window.location.search);
+      const v = params.get('view');
+      if (v) {
+        setView(v);
+      } else if (window.location.pathname === '/preview' || window.location.hash === '#preview') {
+        setView('preview');
+      }
+    };
+    window.addEventListener('popstate', handleUrlChange);
+    window.addEventListener('hashchange', handleUrlChange);
+    return () => {
+      window.removeEventListener('popstate', handleUrlChange);
+      window.removeEventListener('hashchange', handleUrlChange);
+    };
+  }, []);
 
   useEffect(() => {
     const onResize = () => setWindowWidth(window.innerWidth);
@@ -139,6 +165,18 @@ export function App() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setView('preview')}
+            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full border text-[11px] font-bold active:scale-95 transition-all shadow-xs ${
+              view === 'preview'
+                ? 'border-sky-500 bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-300'
+                : 'border-border bg-card text-muted-foreground hover:bg-muted'
+            }`}
+            title="Recent Bill Preview (127.0.0.1:28080)"
+          >
+            <Eye size={13} />
+            Preview
+          </button>
           {!Capacitor.isNativePlatform() && (
             <button
               onClick={() => setMode('desktop')}
@@ -169,11 +207,13 @@ export function App() {
           {view === 'orders' && <Orders />}
           {view === 'products' && <Products />}
           {view === 'settings' && <SettingsView />}
+          {view === 'preview' && <RecentReceiptPreview onBack={() => setView('billing')} />}
         </Suspense>
       </main>
 
       <nav className="fixed bottom-0 left-0 right-0 z-30 flex items-center justify-around h-16 pb-[env(safe-area-inset-bottom)] bg-background/95 backdrop-blur-lg border-t border-border shadow-[0_-4px_16px_rgba(0,0,0,0.03)] dark:shadow-[0_-4px_16px_rgba(0,0,0,0.4)]">
         <NavItem active={view === 'billing'} icon={<Receipt size={22}/>} label="Billing" onClick={() => setView('billing')} />
+        <NavItem active={view === 'preview'} icon={<Eye size={22}/>} label="Preview" onClick={() => setView('preview')} />
         <NavItem active={view === 'home'} icon={<Home size={22}/>} label="Dashboard" onClick={() => setView('home')} />
         <NavItem active={view === 'orders'} icon={<ShoppingBag size={22}/>} label="Orders" onClick={() => setView('orders')} />
         <NavItem active={view === 'settings'} icon={<Settings size={22}/>} label="Settings" onClick={() => setView('settings')} />
